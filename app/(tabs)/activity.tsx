@@ -1,36 +1,18 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useToast } from '@/components/sochill/toast';
 import { activity } from '@/data/mock';
 
 export default function ActivityScreen() {
-  const { showToast } = useToast();
+  const [readAll, setReadAll] = useState(false);
 
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.kicker}>activity</Text>
-            <Text style={styles.title}>People noticed</Text>
-          </View>
-          <Pressable
-            style={styles.iconButton}
-            onPress={() => {
-              showToast({
-                title: 'All caught up',
-                subtitle: 'Swipe this toast left to dismiss it.',
-                autodismiss: true,
-                leading: () => <MaterialIcons name="done-all" size={20} color="#2E8B77" />,
-              });
-            }}>
-            <MaterialIcons name="done-all" size={22} color="#2E8B77" />
-          </Pressable>
-        </View>
 
         <View style={styles.summary}>
           <View style={styles.summaryItem}>
@@ -47,6 +29,10 @@ export default function ActivityScreen() {
             <Text style={styles.summaryNumber}>4</Text>
             <Text style={styles.summaryLabel}>causes</Text>
           </View>
+          <View style={styles.summaryDivider} />
+          <Pressable style={styles.doneAllButton} onPress={() => setReadAll(true)}>
+            <MaterialIcons name="done-all" size={18} color={readAll ? '#90968F' : '#2E8B77'} />
+          </Pressable>
         </View>
 
         <View style={styles.toastPreview}>
@@ -61,7 +47,7 @@ export default function ActivityScreen() {
 
         <View style={styles.list}>
           {activity.map((item) => (
-            <View key={item.id} style={styles.activityItem}>
+            <View key={item.id} style={[styles.activityItem, readAll && styles.activityItemRead]}>
               <View style={[styles.marker, { backgroundColor: item.accent }]} />
               <View style={styles.itemCopy}>
                 <Text style={styles.itemTitle}>
@@ -87,34 +73,6 @@ const styles = StyleSheet.create({
     padding: 18,
     paddingBottom: 28,
   },
-  header: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 18,
-  },
-  kicker: {
-    color: '#3B82B8',
-    fontSize: 13,
-    fontWeight: '800',
-    letterSpacing: 0,
-  },
-  title: {
-    color: '#171A18',
-    fontSize: 30,
-    fontWeight: '800',
-    letterSpacing: 0,
-  },
-  iconButton: {
-    alignItems: 'center',
-    backgroundColor: '#EEF8F3',
-    borderColor: '#D7EADF',
-    borderRadius: 22,
-    borderWidth: 1,
-    height: 44,
-    justifyContent: 'center',
-    width: 44,
-  },
   summary: {
     backgroundColor: '#FFFFFF',
     borderColor: '#ECE4D9',
@@ -123,6 +81,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom: 14,
     padding: 14,
+    alignItems: 'center',
   },
   summaryItem: {
     alignItems: 'center',
@@ -130,8 +89,8 @@ const styles = StyleSheet.create({
   },
   summaryNumber: {
     color: '#171A18',
+    fontFamily: 'SplineSansMono_400Regular',
     fontSize: 22,
-    fontWeight: '900',
   },
   summaryLabel: {
     color: '#7C827D',
@@ -142,6 +101,13 @@ const styles = StyleSheet.create({
   summaryDivider: {
     backgroundColor: '#EEE8DD',
     width: 1,
+    height: 32,
+  },
+  doneAllButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
   },
   toastPreview: {
     alignItems: 'center',
@@ -165,13 +131,13 @@ const styles = StyleSheet.create({
   },
   toastTitle: {
     color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '900',
+    fontFamily: 'SofiaSansCondensed_800ExtraBold',
+    fontSize: 16,
   },
   toastText: {
     color: '#D4D1C9',
-    fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'RobotoSlab_400Regular',
+    fontSize: 12,
     marginTop: 2,
   },
   list: {
@@ -186,6 +152,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     padding: 13,
+  },
+  activityItemRead: {
+    opacity: 0.4,
   },
   marker: {
     borderRadius: 7,
@@ -203,18 +172,19 @@ const styles = StyleSheet.create({
   },
   actor: {
     color: '#171A18',
-    fontWeight: '900',
+    fontFamily: 'SofiaSansCondensed_800ExtraBold',
+    fontSize: 16,
   },
   itemDetail: {
     color: '#747A75',
-    fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'RobotoSlab_400Regular',
+    fontSize: 12,
     lineHeight: 18,
     marginTop: 3,
   },
   time: {
     color: '#90968F',
-    fontSize: 12,
-    fontWeight: '800',
+    fontFamily: 'SplineSansMono_400Regular',
+    fontSize: 11,
   },
 });

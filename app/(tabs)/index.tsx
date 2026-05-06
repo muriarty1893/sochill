@@ -1,5 +1,5 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { withSequence, withTiming, useSharedValue } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,6 +15,17 @@ export default function HomeScreen() {
   const reloadProgress = useSharedValue(1);
   const { showToast } = useToast();
   const { donate, balance, defaultAmount } = useSparks();
+  const [reactedTo, setReactedTo] = useState<Set<string>>(new Set());
+
+  const toggleReaction = useCallback((postId: string, label: string) => {
+    const key = `${postId}-${label}`;
+    setReactedTo((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
 
   const handleDonate = useCallback((causeName: string) => {
     const success = donate();
@@ -51,7 +62,7 @@ export default function HomeScreen() {
     );
     showToast({
       title: 'Feed refreshed',
-      subtitle: 'New fake posts will arrive once we wire the backend.',
+      subtitle: 'New posts incoming.',
       autodismiss: true,
       leading: () => <MaterialIcons name="refresh" size={20} color="#2E8B77" />,
     });
@@ -62,34 +73,28 @@ export default function HomeScreen() {
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.kicker}>sochill</Text>
-            <Text style={styles.title}>Public feed</Text>
-          </View>
-          <ReloadButton
-            width={92}
-            height={40}
-            progress={reloadProgress}
-            strokeWidth={1}
-            borderRadius={20}
-            color="#2E8B77"
-            fontSize={14}
-            onPress={onReload}
-          />
-        </View>
 
-        <View style={styles.composer}>
+        <View style={styles.composerRow}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>ME</Text>
           </View>
           <Text style={styles.composerText}>What feels worth sharing?</Text>
+          <ReloadButton
+            width={80}
+            height={36}
+            progress={reloadProgress}
+            strokeWidth={1}
+            borderRadius={18}
+            color="#2E8B77"
+            fontSize={13}
+            onPress={onReload}
+          />
           <CircularButton
-            size={44}
-            blastRadius={46}
+            size={40}
+            blastRadius={42}
             backgroundColor="#2E8B77"
-            baseIcon={<MaterialIcons name="add" size={25} color="#FFFCF6" />}
-            activeIcon={<MaterialIcons name="check" size={24} color="#FFFCF6" />}
+            baseIcon={<MaterialIcons name="add" size={22} color="#FFFCF6" />}
+            activeIcon={<MaterialIcons name="check" size={20} color="#FFFCF6" />}
             onPress={() => {
               showToast({
                 title: 'Spark',
@@ -106,9 +111,6 @@ export default function HomeScreen() {
             <Text style={styles.bandLabel}>Spotlight nearby</Text>
             <Text style={styles.bandTitle}>14 people boosted food access today</Text>
           </View>
-          <Pressable style={styles.bandButton}>
-            <Text style={styles.bandButtonText}>See</Text>
-          </Pressable>
         </View>
 
         <View style={styles.feed}>
@@ -149,13 +151,20 @@ export default function HomeScreen() {
               ) : null}
 
               <View style={styles.actions}>
-                {post.reactions.map((reaction) => (
-                  <Pressable key={reaction.label} style={styles.reaction}>
-                    <Text style={styles.reactionText}>
-                      {reaction.label} {reaction.count}
-                    </Text>
-                  </Pressable>
-                ))}
+                {post.reactions.map((reaction) => {
+                  const key = `${post.id}-${reaction.label}`;
+                  const reacted = reactedTo.has(key);
+                  return (
+                    <Pressable
+                      key={reaction.label}
+                      style={[styles.reaction, reacted && styles.reactionActive]}
+                      onPress={() => toggleReaction(post.id, reaction.label)}>
+                      <Text style={[styles.reactionText, reacted && styles.reactionTextActive]}>
+                        {reaction.label} {reaction.count + (reacted ? 1 : 0)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
                 <View style={styles.replyCount}>
                   <MaterialIcons name="chat-bubble-outline" size={16} color="#717771" />
                   <Text style={styles.replyText}>{post.replies}</Text>
@@ -193,43 +202,14 @@ const styles = StyleSheet.create({
     padding: 18,
     paddingBottom: 28,
   },
-  header: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 18,
-  },
-  kicker: {
-    color: '#2E8B77',
-    fontSize: 13,
-    fontWeight: '800',
-    letterSpacing: 0,
-    textTransform: 'lowercase',
-  },
-  title: {
-    color: '#171A18',
-    fontSize: 30,
-    fontWeight: '800',
-    letterSpacing: 0,
-  },
-  reloadButton: {
-    alignItems: 'center',
-    backgroundColor: '#EEF8F3',
-    borderColor: '#D7EADF',
-    borderRadius: 22,
-    borderWidth: 1,
-    height: 44,
-    justifyContent: 'center',
-    width: 44,
-  },
-  composer: {
+  composerRow: {
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderColor: '#ECE4D9',
     borderRadius: 8,
     borderWidth: 1,
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
     marginBottom: 14,
     padding: 12,
   },
@@ -252,29 +232,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
-  sparkButton: {
-    alignItems: 'center',
-    backgroundColor: '#2E8B77',
-    borderRadius: 22,
-    height: 44,
-    justifyContent: 'center',
-    width: 44,
-  },
-  stackSection: {
-    marginBottom: 16,
-  },
-  sectionLabel: {
-    color: '#171A18',
-    fontSize: 15,
-    fontWeight: '900',
-    marginBottom: 6,
-  },
   impactBand: {
-    alignItems: 'center',
     backgroundColor: '#F8E5DD',
     borderRadius: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     marginBottom: 16,
     padding: 14,
   },
@@ -285,23 +245,9 @@ const styles = StyleSheet.create({
   },
   bandTitle: {
     color: '#31241F',
-    fontSize: 15,
-    fontWeight: '800',
+    fontFamily: 'SofiaSansCondensed_800ExtraBold',
+    fontSize: 18,
     marginTop: 3,
-    maxWidth: 230,
-  },
-  bandButton: {
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    height: 36,
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-  },
-  bandButtonText: {
-    color: '#9F563E',
-    fontSize: 13,
-    fontWeight: '800',
   },
   feed: {
     gap: 12,
@@ -323,13 +269,13 @@ const styles = StyleSheet.create({
   },
   author: {
     color: '#171A18',
-    fontSize: 16,
-    fontWeight: '800',
+    fontFamily: 'SofiaSansCondensed_800ExtraBold',
+    fontSize: 18,
   },
   meta: {
     color: '#7C827D',
-    fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'SplineSansMono_400Regular',
+    fontSize: 11,
     marginTop: 1,
   },
   moodPill: {
@@ -345,8 +291,8 @@ const styles = StyleSheet.create({
   },
   body: {
     color: '#242724',
-    fontSize: 16,
-    fontWeight: '500',
+    fontFamily: 'RobotoSlab_400Regular',
+    fontSize: 15,
     lineHeight: 23,
     marginTop: 14,
   },
@@ -394,10 +340,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
   },
+  reactionActive: {
+    backgroundColor: '#171A18',
+  },
   reactionText: {
     color: '#4E554F',
-    fontSize: 13,
-    fontWeight: '800',
+    fontFamily: 'SplineSansMono_400Regular',
+    fontSize: 12,
+  },
+  reactionTextActive: {
+    color: '#FFFFFF',
   },
   replyCount: {
     alignItems: 'center',
@@ -407,8 +359,8 @@ const styles = StyleSheet.create({
   },
   replyText: {
     color: '#717771',
-    fontSize: 13,
-    fontWeight: '800',
+    fontFamily: 'SplineSansMono_400Regular',
+    fontSize: 12,
   },
   modalInner: {
     flex: 1,
@@ -417,8 +369,8 @@ const styles = StyleSheet.create({
   },
   modalLabel: {
     color: '#171A18',
-    fontSize: 18,
-    fontWeight: '900',
+    fontFamily: 'SofiaSansCondensed_800ExtraBold',
+    fontSize: 20,
     marginBottom: 12,
   },
   fakeInput: {
@@ -431,8 +383,8 @@ const styles = StyleSheet.create({
   },
   fakeInputText: {
     color: '#8A8F8D',
-    fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'RobotoSlab_400Regular',
+    fontSize: 15,
     lineHeight: 23,
   },
   modalPillRow: {

@@ -25,6 +25,19 @@ export type Charity = {
   supporters: string;
 };
 
+export type CharityPost = {
+  id: string;
+  charityId: string;
+  charityName: string;
+  category: string;
+  accent: string;
+  softAccent: string;
+  emoji: string;
+  title: string;
+  body: string;
+  supporters: string;
+};
+
 export type ActivityItem = {
   id: string;
   actor: string;
@@ -110,6 +123,93 @@ export const charities: Charity[] = [
     accent: '#C86B4A',
     softAccent: '#F8E5DD',
     supporters: '740',
+  },
+];
+
+export const charityPosts: CharityPost[] = [
+  {
+    id: 'cp-1',
+    charityId: 'charity-1',
+    charityName: 'Neighborhood Pantry Fund',
+    category: 'Food access',
+    accent: '#2E8B77',
+    softAccent: '#DDF2EB',
+    emoji: '🥗',
+    title: '14 new families joined our weekly drop this month.',
+    body: 'Community fridges near Kadikoy are running low on fresh produce. We need help keeping shelves stocked for families who depend on them every single week.',
+    supporters: '2.4k',
+  },
+  {
+    id: 'cp-2',
+    charityId: 'charity-2',
+    charityName: 'Blue Shore Cleanup',
+    category: 'Environment',
+    accent: '#3B82B8',
+    softAccent: '#DCEFFA',
+    emoji: '🌊',
+    title: 'Saturday cleanup needs 12 more volunteers.',
+    body: 'We removed 400kg of plastic from city coastlines last season. This Saturday we\'re back at the Bostanci shore — bring gloves, bring a friend.',
+    supporters: '980',
+  },
+  {
+    id: 'cp-3',
+    charityId: 'charity-3',
+    charityName: 'Open Room Books',
+    category: 'Education',
+    accent: '#C86B4A',
+    softAccent: '#F8E5DD',
+    emoji: '📚',
+    title: 'Shelf 12 opens next week. One more push needed.',
+    body: 'We\'re 91% funded for our 12th reading shelf inside a youth shelter. Every spark helps us get books into the hands of kids who need a quiet corner.',
+    supporters: '740',
+  },
+  {
+    id: 'cp-4',
+    charityId: 'charity-4',
+    charityName: 'Warm Hands Mutual Aid',
+    category: 'Mutual Aid',
+    accent: '#8B5E2E',
+    softAccent: '#F5E9D9',
+    emoji: '🤝',
+    title: 'Winter kits going out this week.',
+    body: 'Blankets, socks, and warm food packages are packed and ready. We\'re distributing across three districts this weekend. Attention helps us reach more ground.',
+    supporters: '1.1k',
+  },
+  {
+    id: 'cp-5',
+    charityId: 'charity-5',
+    charityName: 'Safe Roof Housing',
+    category: 'Housing',
+    accent: '#6B4CA8',
+    softAccent: '#EDE5F8',
+    emoji: '🏠',
+    title: '40 people in transitional housing. 8 more are waiting.',
+    body: 'Our transitional shelter is at full capacity. We\'re working to open a second site. Local awareness can unlock the government funding we need to get there faster.',
+    supporters: '620',
+  },
+  {
+    id: 'cp-6',
+    charityId: 'charity-6',
+    charityName: 'Park Clinic Collective',
+    category: 'Health',
+    accent: '#2E7D4F',
+    softAccent: '#D9F0E4',
+    emoji: '💚',
+    title: 'Free clinic, every Saturday, rain or shine.',
+    body: 'Volunteer doctors run a free clinic at the park each weekend. Help us spread the word so the people who need care can find us — no documents, no cost.',
+    supporters: '430',
+  },
+  {
+    id: 'cp-7',
+    charityId: 'charity-7',
+    charityName: '2000 Native Trees',
+    category: 'Environment',
+    accent: '#3D7A3A',
+    softAccent: '#DAF0D9',
+    emoji: '🌳',
+    title: '1,847 trees planted. 153 to go before spring.',
+    body: 'Every native tree we plant lowers city heat and improves air quality for thousands of people. We\'re so close to our goal — help us finish what we started.',
+    supporters: '1.8k',
   },
 ];
 

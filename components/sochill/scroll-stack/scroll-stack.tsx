@@ -1,78 +1,116 @@
-import { StyleSheet, Text, View } from 'react-native';
-
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useState } from 'react';
+import { Dimensions, StyleSheet, Text, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
-  useAnimatedScrollHandler,
+  runOnJS,
   useSharedValue,
+  withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 
-import { CARD_HEIGHT, CARD_WIDTH, ScrollCard } from './scroll-card';
+import { useToast } from '@/components/sochill/toast';
+import { useSparks } from '@/contexts/sparks-context';
+import type { CharityPost } from '@/data/mock';
+import { SwipeCard } from './scroll-card';
 
-import type { ScrollCardData } from './scroll-card';
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.35;
 
-const CARDS: ScrollCardData[] = [
-  { color: '#F1EEE0', accent: '#E8DFD0', label: 'Food Access', sub: 'Weekly groceries for 200 families', emoji: '🥗' },
-  { color: '#EAF4EF', accent: '#D5ECE2', label: 'Environment', sub: 'Beach cleanups · 400 kg removed', emoji: '🌿' },
-  { color: '#FFF2CF', accent: '#F5E8B8', label: 'Education', sub: 'Free reading room for local kids', emoji: '📚' },
-  { color: '#F6DFEB', accent: '#EDCFE1', label: 'Mutual Aid', sub: 'Neighbor-to-neighbor support network', emoji: '🤝' },
-  { color: '#E3DFFF', accent: '#D4CFFA', label: 'Housing', sub: 'Transitional shelter for 40 people', emoji: '🏠' },
-  { color: '#AFCBFF', accent: '#9DBFF5', label: 'Health', sub: 'Free clinic Saturdays in the park', emoji: '💚' },
-  { color: '#F4ACB7', accent: '#EE99A6', label: 'Arts', sub: 'Community murals · open to all', emoji: '🎨' },
-  { color: '#C7E3D4', accent: '#B0D8C3', label: 'Urban Trees', sub: '2,000 native trees by spring', emoji: '🌳' },
-  { color: '#F3D9BC', accent: '#EAC9A5', label: 'Animals', sub: 'Stray rescue · 60 rehomed this year', emoji: '🐾' },
-  { color: '#FFD1DC', accent: '#F5BECB', label: 'Community', sub: 'Town hall events every first Sunday', emoji: '🏘️' },
-];
+type SwipeStackProps = {
+  posts: CharityPost[];
+};
 
-const VERTICAL_PADDING = 25;
+export const ScrollStack = ({ posts }: SwipeStackProps) => {
+  const { showToast } = useToast();
+  const { support } = useSparks();
+  const [isEmpty, setIsEmpty] = useState(false);
+  const [swipeCount, setSwipeCount] = useState(0);
 
-export const ScrollStack = () => {
-  const scrollOffset = useSharedValue(0);
+  const currentIndex = useSharedValue(posts.length - 1);
+  const panX = useSharedValue(0);
 
-  const onScroll = useAnimatedScrollHandler({
-    onScroll: (event) => {
-      scrollOffset.value = event.contentOffset.x;
-    },
-  });
+  const handleSupport = (postId: string, charityName: string) => {
+    support(postId);
+    showToast({
+      title: `✦ Sparked! ${charityName} gets 1 spark`,
+      autodismiss: true,
+      leading: () => <MaterialIcons name="auto-awesome" size={20} color="#C86B4A" />,
+    });
+  };
+
+  const handleSwipeComplete = (idx: number, isRight: boolean) => {
+    const post = posts[idx];
+    if (isRight) handleSupport(post.id, post.charityName);
+    setSwipeCount((c) => c + 1);
+    if (idx - 1 < 0) setIsEmpty(true);
+  };
+
+  const gesture = Gesture.Pan()
+    .onUpdate((e) => {
+      if (currentIndex.value < 0) return;
+      panX.value = e.translationX;
+    })
+    .onEnd((e) => {
+      if (currentIndex.value < 0) return;
+
+      const isRight = e.translationX > SWIPE_THRESHOLD;
+      const isLeft = e.translationX < -SWIPE_THRESHOLD;
+
+      if (isRight || isLeft) {
+        const dir = isRight ? 1 : -1;
+        const idx = currentIndex.value;
+
+        panX.value = withTiming(dir * SCREEN_WIDTH * 1.5, { duration: 300 }, () => {
+          'worklet';
+          currentIndex.value = idx - 1;
+          panX.value = 0;
+          runOnJS(handleSwipeComplete)(idx, isRight);
+        });
+      } else {
+        panX.value = withSpring(0, { damping: 20, stiffness: 300 });
+      }
+    });
+
+  if (isEmpty) {
+    return (
+      <View style={styles.emptyState}>
+        <Text style={styles.emptyEmoji}>✦</Text>
+        <Text style={styles.emptyTitle}>All caught up</Text>
+        <Text style={styles.emptyBody}>You've seen every cause for today. Check back tomorrow for new posts from charities near you.</Text>
+      </View>
+    );
+  }
 
   return (
-    <View style={styles.wrapper}>
-      <Text style={styles.sectionLabel}>Browse causes</Text>
-      <View style={styles.container}>
-        <View style={{ marginBottom: CARD_HEIGHT }}>
-          <Animated.FlatList
-            horizontal
-            snapToInterval={CARD_WIDTH}
-            disableIntervalMomentum
-            onScroll={onScroll}
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            decelerationRate="fast"
-            style={styles.scrollView}
-            data={CARDS}
-            inverted
-            contentContainerStyle={styles.scrollViewContent}
-            renderItem={() => (
-              <View style={{ height: CARD_HEIGHT, width: CARD_WIDTH }} />
-            )}
-            keyExtractor={(_, i) => String(i)}
-          />
-          <Animated.View
-            style={{
-              position: 'absolute',
-              top: VERTICAL_PADDING,
-              bottom: VERTICAL_PADDING,
-              left: 0,
-              right: 0,
-              pointerEvents: 'none',
-            }}>
-            {CARDS.map((item, i) => (
-              <ScrollCard
-                key={i}
-                scrollOffset={scrollOffset}
-                index={CARDS.length - 1 - i}
-                data={item}
-              />
-            ))}
-          </Animated.View>
+    <View style={styles.container}>
+      <View style={styles.counter}>
+        <Text style={styles.counterText}>{swipeCount} / {posts.length}</Text>
+      </View>
+
+      <GestureDetector gesture={gesture}>
+        <Animated.View style={styles.deck}>
+          {posts.map((post, i) => (
+            <SwipeCard
+              key={post.id}
+              index={i}
+              data={post}
+              currentIndex={currentIndex}
+              panX={panX}
+              screenWidth={SCREEN_WIDTH}
+            />
+          ))}
+        </Animated.View>
+      </GestureDetector>
+
+      <View style={styles.hints}>
+        <View style={styles.hintLeft}>
+          <MaterialIcons name="close" size={18} color="#6B7280" />
+          <Text style={styles.hintText}>skip</Text>
+        </View>
+        <View style={styles.hintRight}>
+          <Text style={styles.hintText}>spark</Text>
+          <MaterialIcons name="auto-awesome" size={18} color="#2E8B77" />
         </View>
       </View>
     </View>
@@ -80,29 +118,69 @@ export const ScrollStack = () => {
 };
 
 const styles = StyleSheet.create({
-  wrapper: {
-    marginBottom: 16,
+  container: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 20,
   },
-  sectionLabel: {
-    color: '#171A18',
-    fontSize: 15,
-    fontWeight: '900',
+  counter: {
+    alignItems: 'flex-end',
     marginBottom: 12,
   },
-  container: {
-    backgroundColor: '#F4F0E8',
-    borderRadius: 12,
-    justifyContent: 'center',
-    overflow: 'hidden',
+  counterText: {
+    color: '#90968F',
+    fontFamily: 'SplineSansMono_400Regular',
+    fontSize: 12,
   },
-  scrollView: {
-    maxHeight: CARD_HEIGHT + VERTICAL_PADDING * 2,
-    position: 'absolute',
+  deck: {
+    flex: 1,
   },
-  scrollViewContent: {
+  hints: {
     alignItems: 'center',
-    height: CARD_HEIGHT + VERTICAL_PADDING * 2,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+    paddingHorizontal: 8,
+  },
+  hintLeft: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
+  },
+  hintRight: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
+  },
+  hintText: {
+    color: '#7C827D',
+    fontFamily: 'SplineSansMono_400Regular',
+    fontSize: 13,
+  },
+  emptyState: {
+    alignItems: 'center',
+    flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: CARD_WIDTH,
+    paddingHorizontal: 36,
+  },
+  emptyEmoji: {
+    color: '#C86B4A',
+    fontSize: 36,
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    color: '#171A18',
+    fontFamily: 'SofiaSansCondensed_800ExtraBold',
+    fontSize: 28,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  emptyBody: {
+    color: '#7C827D',
+    fontFamily: 'RobotoSlab_400Regular',
+    fontSize: 14,
+    lineHeight: 22,
+    textAlign: 'center',
   },
 });

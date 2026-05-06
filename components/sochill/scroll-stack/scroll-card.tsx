@@ -1,6 +1,4 @@
-import { Dimensions, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-
-import { useMemo } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 import Animated, {
   Extrapolation,
@@ -9,226 +7,195 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import type { SharedValue } from 'react-native-reanimated';
+import type { CharityPost } from '@/data/mock';
 
-export type ScrollCardData = {
-  color: string;
-  accent: string;
-  label: string;
-  sub: string;
-  emoji: string;
-};
-
-export type ScrollCardProps = {
+export type SwipeCardProps = {
   index: number;
-  data: ScrollCardData;
-  scrollOffset: SharedValue<number>;
+  data: CharityPost;
+  currentIndex: SharedValue<number>;
+  panX: SharedValue<number>;
+  screenWidth: number;
 };
 
-const { width: INITIAL_WINDOW_WIDTH } = Dimensions.get('window');
-export const CARD_WIDTH = INITIAL_WINDOW_WIDTH / 3;
-export const CARD_HEIGHT = (CARD_WIDTH / 3) * 4;
+const STACK_DEPTH = 3;
 
-const ANIM = {
-  scale: { min: 0.75, medium: 0.8, active: 1 },
-  rotation: { max: Math.PI / 5, medium: Math.PI / 10, small: Math.PI / 20 },
-  tx: { small: 0.2, medium: 0.25, large: 0.3 },
-  ty: { small: 0.02, medium: 0.025, large: 0.04, active: 0.05 },
-  swapDiv: 2.8,
-  perspective: { val: 10000000, rot: Math.PI / 10, swap: Math.PI / 5 },
-  zIndex: { min: 0, low: 200, medium: 300, high: 400 },
-};
-
-export const ScrollCard: React.FC<ScrollCardProps> = ({ index, data, scrollOffset }) => {
-  const { width: windowWidth } = useWindowDimensions();
-
-  const inputRange = [
-    (index - 3) * CARD_WIDTH,
-    (index - 2) * CARD_WIDTH,
-    (index - 1) * CARD_WIDTH,
-    index * CARD_WIDTH,
-    (index + 1) * CARD_WIDTH,
-    (index + 2) * CARD_WIDTH,
-    (index + 3) * CARD_WIDTH,
-  ];
-
+export const SwipeCard: React.FC<SwipeCardProps> = ({ index, data, currentIndex, panX, screenWidth }) => {
   const rStyle = useAnimatedStyle(() => {
-    const scale = interpolate(
-      scrollOffset.value,
-      inputRange,
-      [ANIM.scale.min, ANIM.scale.medium, ANIM.scale.medium, ANIM.scale.active, ANIM.scale.medium, ANIM.scale.medium, ANIM.scale.min],
-      Extrapolation.CLAMP,
-    );
+    const dist = currentIndex.value - index;
 
-    const rotate = interpolate(
-      scrollOffset.value,
-      inputRange,
-      [-ANIM.rotation.max, -ANIM.rotation.medium, -ANIM.rotation.small, 0, ANIM.rotation.small, ANIM.rotation.medium, ANIM.rotation.max],
-      Extrapolation.CLAMP,
-    );
+    if (dist < 0) {
+      return { opacity: 0, zIndex: 0, pointerEvents: 'none' as const };
+    }
 
-    const translateX = interpolate(
-      scrollOffset.value,
-      inputRange,
-      [
-        -CARD_WIDTH * ANIM.tx.large,
-        -CARD_WIDTH * ANIM.tx.medium,
-        -CARD_WIDTH * ANIM.tx.small,
-        0,
-        CARD_WIDTH * ANIM.tx.small,
-        CARD_WIDTH * ANIM.tx.medium,
-        CARD_WIDTH * ANIM.tx.large,
-      ],
-      Extrapolation.CLAMP,
-    );
+    if (dist === 0) {
+      const rotation = (panX.value / screenWidth) * 12;
+      return {
+        opacity: 1,
+        zIndex: 100,
+        transform: [
+          { translateX: panX.value },
+          { rotate: `${rotation}deg` },
+          { scale: 1 },
+          { translateY: 0 },
+        ],
+      };
+    }
 
-    const translateY = interpolate(
-      scrollOffset.value,
-      inputRange,
-      [
-        -CARD_HEIGHT * ANIM.ty.active,
-        -CARD_HEIGHT * ANIM.ty.medium,
-        -CARD_HEIGHT * ANIM.ty.large,
-        0,
-        -CARD_HEIGHT * ANIM.ty.large,
-        -CARD_HEIGHT * ANIM.ty.medium,
-        -CARD_HEIGHT * ANIM.ty.small,
-      ],
-      Extrapolation.CLAMP,
-    );
-
-    const perspectiveRotateY = interpolate(
-      scrollOffset.value,
-      [
-        (index - 3) * CARD_WIDTH,
-        (index - 2) * CARD_WIDTH,
-        (index - 1) * CARD_WIDTH,
-        (index - 0.5) * CARD_WIDTH,
-        index * CARD_WIDTH,
-        (index + 0.5) * CARD_WIDTH,
-        (index + 1) * CARD_WIDTH,
-        (index + 2) * CARD_WIDTH,
-        (index + 3) * CARD_WIDTH,
-      ],
-      [
-        -ANIM.perspective.rot,
-        -ANIM.perspective.rot,
-        -ANIM.rotation.small,
-        -ANIM.perspective.swap,
-        0,
-        ANIM.perspective.swap,
-        ANIM.rotation.small,
-        ANIM.perspective.rot,
-        ANIM.perspective.rot,
-      ],
-      Extrapolation.CLAMP,
-    );
-
-    const additionalTranslateX = interpolate(
-      scrollOffset.value,
-      [
-        (index - 3) * CARD_WIDTH,
-        (index - 2) * CARD_WIDTH,
-        (index - 1) * CARD_WIDTH,
-        (index - 0.5) * CARD_WIDTH,
-        index * CARD_WIDTH,
-        (index + 0.5) * CARD_WIDTH,
-        (index + 1) * CARD_WIDTH,
-        (index + 2) * CARD_WIDTH,
-        (index + 3) * CARD_WIDTH,
-      ],
-      [0, 0, 0, -CARD_WIDTH / ANIM.swapDiv, 0, CARD_WIDTH / ANIM.swapDiv, 0, 0, 0],
-      Extrapolation.CLAMP,
-    );
-
-    // Hide cards that have already been scrolled past
-    const opacity = scrollOffset.value > (index + 0.6) * CARD_WIDTH ? 0 : 1;
+    const clampedDist = Math.min(dist, STACK_DEPTH);
+    const scale = interpolate(clampedDist, [1, STACK_DEPTH], [0.96, 0.88], Extrapolation.CLAMP);
+    const translateY = interpolate(clampedDist, [1, STACK_DEPTH], [10, 28], Extrapolation.CLAMP);
 
     return {
-      opacity,
+      opacity: dist <= STACK_DEPTH ? 1 : 0,
+      zIndex: 100 - clampedDist * 10,
       transform: [
-        { translateX },
-        { translateY },
-        { translateX: additionalTranslateX },
+        { translateX: 0 },
+        { rotate: '0deg' },
         { scale },
-        { rotate: `${rotate}rad` },
-        { rotateY: `${perspectiveRotateY}rad` },
+        { translateY },
       ],
     };
   });
 
-  const zIndexStyle = useAnimatedStyle(() => {
-    const zIndex = interpolate(
-      scrollOffset.value,
-      inputRange,
-      [ANIM.zIndex.min, ANIM.zIndex.low, ANIM.zIndex.medium, ANIM.zIndex.high, ANIM.zIndex.medium, ANIM.zIndex.low, ANIM.zIndex.min],
-      Extrapolation.CLAMP,
-    );
+  const sparkBadgeStyle = useAnimatedStyle(() => ({
+    opacity: currentIndex.value === index
+      ? interpolate(panX.value, [0, screenWidth * 0.25], [0, 1], Extrapolation.CLAMP)
+      : 0,
+  }));
 
-    return { zIndex };
-  });
-
-  const shadowStyle = useMemo(
-    () => ({
-      boxShadow: '0px 6px 18px rgba(0, 0, 0, 0.09)',
-    }),
-    [],
-  );
+  const skipBadgeStyle = useAnimatedStyle(() => ({
+    opacity: currentIndex.value === index
+      ? interpolate(panX.value, [0, -screenWidth * 0.25], [0, 1], Extrapolation.CLAMP)
+      : 0,
+  }));
 
   return (
-    <Animated.View style={[StyleSheet.absoluteFillObject, zIndexStyle]}>
-      <Animated.View
-        style={[
-          {
-            position: 'absolute',
-            left: (windowWidth - CARD_WIDTH) / 2,
-            height: CARD_HEIGHT,
-            width: CARD_WIDTH,
-            borderRadius: 20,
-            borderCurve: 'continuous' as never,
-            backgroundColor: data.color,
-          } as object,
-          shadowStyle,
-          rStyle,
-        ]}>
-        <View style={[styles.emojiArea, { backgroundColor: data.accent }]}>
-          <Text style={styles.emoji}>{data.emoji}</Text>
+    <Animated.View style={[StyleSheet.absoluteFill, styles.card, rStyle]}>
+      <View style={[styles.top, { backgroundColor: data.accent }]}>
+        <Text style={styles.emoji}>{data.emoji}</Text>
+        <View style={styles.topMeta}>
+          <View style={[styles.categoryPill, { backgroundColor: 'rgba(0,0,0,0.18)' }]}>
+            <Text style={styles.categoryText}>{data.category}</Text>
+          </View>
+          <Text style={styles.charityName}>{data.charityName}</Text>
         </View>
-        <View style={styles.body}>
-          <Text style={styles.label} numberOfLines={2}>{data.label}</Text>
-          <Text style={styles.sub} numberOfLines={2}>{data.sub}</Text>
-        </View>
+      </View>
+
+      <View style={styles.body}>
+        <Text style={styles.title}>{data.title}</Text>
+        <Text style={styles.bodyText}>{data.body}</Text>
+        <Text style={styles.supporters}>{data.supporters} supporters</Text>
+      </View>
+
+      <Animated.View style={[styles.sparkBadge, sparkBadgeStyle]}>
+        <Text style={styles.sparkBadgeText}>✦ spark</Text>
+      </Animated.View>
+
+      <Animated.View style={[styles.skipBadge, skipBadgeStyle]}>
+        <Text style={styles.skipBadgeText}>skip</Text>
       </Animated.View>
     </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
-  emojiArea: {
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+  top: {
     alignItems: 'center',
-    borderRadius: 20,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
     flex: 1,
     justifyContent: 'center',
+    gap: 14,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
   },
   emoji: {
-    fontSize: 38,
+    fontSize: 56,
+  },
+  topMeta: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  categoryPill: {
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  categoryText: {
+    color: 'rgba(255,255,255,0.9)',
+    fontFamily: 'SplineSansMono_600SemiBold',
+    fontSize: 11,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  charityName: {
+    color: '#FFFFFF',
+    fontFamily: 'SofiaSansCondensed_800ExtraBold',
+    fontSize: 26,
+    letterSpacing: 0.2,
+    textAlign: 'center',
   },
   body: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    backgroundColor: '#FFFFFF',
+    gap: 10,
+    padding: 22,
+    paddingBottom: 26,
   },
-  label: {
+  title: {
     color: '#171A18',
-    fontSize: 13,
-    fontWeight: '800',
-    letterSpacing: -0.2,
-    marginBottom: 3,
+    fontFamily: 'SofiaSansCondensed_800ExtraBold',
+    fontSize: 22,
+    letterSpacing: 0.1,
+    lineHeight: 27,
   },
-  sub: {
-    color: '#7C827D',
-    fontSize: 11,
-    fontWeight: '600',
-    lineHeight: 15,
+  bodyText: {
+    color: '#4E554F',
+    fontFamily: 'RobotoSlab_400Regular',
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  supporters: {
+    color: '#90968F',
+    fontFamily: 'SplineSansMono_400Regular',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  sparkBadge: {
+    backgroundColor: '#2E8B77',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    position: 'absolute',
+    right: 20,
+    top: 28,
+  },
+  sparkBadgeText: {
+    color: '#FFFFFF',
+    fontFamily: 'SofiaSansCondensed_800ExtraBold',
+    fontSize: 18,
+    letterSpacing: 0.5,
+  },
+  skipBadge: {
+    backgroundColor: '#6B7280',
+    borderRadius: 12,
+    left: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    position: 'absolute',
+    top: 28,
+  },
+  skipBadgeText: {
+    color: '#FFFFFF',
+    fontFamily: 'SofiaSansCondensed_800ExtraBold',
+    fontSize: 18,
+    letterSpacing: 0.5,
   },
 });

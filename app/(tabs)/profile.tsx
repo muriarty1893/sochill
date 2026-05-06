@@ -2,25 +2,22 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useToast } from '@/components/sochill/toast';
 import { useSparks } from '@/contexts/sparks-context';
 
 export default function ProfileScreen() {
   const { balance, defaultAmount } = useSparks();
+  const { showToast } = useToast();
+
+  const showComingSoon = () => {
+    showToast({ title: 'Coming soon', autodismiss: true });
+  };
 
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.kicker}>profile</Text>
-            <Text style={styles.title}>Your corner</Text>
-          </View>
-          <Pressable style={styles.iconButton}>
-            <MaterialIcons name="settings" size={22} color="#171A18" />
-          </Pressable>
-        </View>
 
         <View style={styles.profileBlock}>
           <View style={styles.bigAvatar}>
@@ -30,19 +27,9 @@ export default function ProfileScreen() {
             <Text style={styles.name}>sochill user</Text>
             <Text style={styles.handle}>@newhere</Text>
           </View>
-          <Pressable style={styles.editButton}>
+          <Pressable style={styles.editButton} onPress={() => showToast({ title: 'Edit profile coming soon', autodismiss: true })}>
             <Text style={styles.editButtonText}>Edit</Text>
           </Pressable>
-        </View>
-
-        <View style={styles.authBox}>
-          <View style={styles.authIcon}>
-            <MaterialIcons name="lock-open" size={21} color="#2E8B77" />
-          </View>
-          <View style={styles.authCopy}>
-            <Text style={styles.authTitle}>Auth will live here</Text>
-            <Text style={styles.authText}>For now this is a friendly placeholder while we shape the app.</Text>
-          </View>
         </View>
 
         <View style={styles.stats}>
@@ -66,14 +53,23 @@ export default function ProfileScreen() {
             <Text style={styles.sparksBalance}>{balance}</Text>
             <Text style={styles.sparksSub}>Default donation: {defaultAmount} sparks per tap</Text>
           </View>
-          <Pressable style={styles.sparksButton}>
-            <MaterialIcons name="add" size={18} color="#2E8B77" />
-            <Text style={styles.sparksButtonText}>Get more</Text>
+          <Pressable
+            style={styles.sparksButton}
+            onPress={() =>
+              showToast({
+                title: 'How sparks work',
+                subtitle: 'Sparks go to charities when you support their posts — your balance stays yours.',
+                autodismiss: true,
+                leading: () => <MaterialIcons name="auto-awesome" size={20} color="#C86B4A" />,
+              })
+            }>
+            <MaterialIcons name="info-outline" size={18} color="#2E8B77" />
+            <Text style={styles.sparksButtonText}>How it works</Text>
           </Pressable>
         </View>
 
         <View style={styles.impactCard}>
-          <Text style={styles.sectionLabel}>Impact this month</Text>
+          <Text style={styles.impactSectionLabel}>Impact this month</Text>
           <Text style={styles.impactTitle}>You helped send attention to three community campaigns.</Text>
           <View style={styles.impactRow}>
             <View style={styles.impactDot} />
@@ -86,8 +82,9 @@ export default function ProfileScreen() {
             { icon: 'person-add', title: 'Invite friends' },
             { icon: 'volunteer-activism', title: 'Saved charities' },
             { icon: 'privacy-tip', title: 'Privacy' },
+            { icon: 'settings', title: 'Settings' },
           ].map((item) => (
-            <Pressable key={item.title} style={styles.settingRow}>
+            <Pressable key={item.title} style={styles.settingRow} onPress={showComingSoon}>
               <MaterialIcons name={item.icon as keyof typeof MaterialIcons.glyphMap} size={21} color="#4E554F" />
               <Text style={styles.settingText}>{item.title}</Text>
               <MaterialIcons name="chevron-right" size={22} color="#A0A59F" />
@@ -107,34 +104,6 @@ const styles = StyleSheet.create({
   content: {
     padding: 18,
     paddingBottom: 28,
-  },
-  header: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 18,
-  },
-  kicker: {
-    color: '#2E8B77',
-    fontSize: 13,
-    fontWeight: '800',
-    letterSpacing: 0,
-  },
-  title: {
-    color: '#171A18',
-    fontSize: 30,
-    fontWeight: '800',
-    letterSpacing: 0,
-  },
-  iconButton: {
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderColor: '#ECE4D9',
-    borderRadius: 22,
-    borderWidth: 1,
-    height: 44,
-    justifyContent: 'center',
-    width: 44,
   },
   profileBlock: {
     alignItems: 'center',
@@ -157,21 +126,21 @@ const styles = StyleSheet.create({
   },
   bigAvatarText: {
     color: '#2E8B77',
-    fontSize: 18,
-    fontWeight: '900',
+    fontFamily: 'SofiaSansCondensed_800ExtraBold',
+    fontSize: 20,
   },
   profileCopy: {
     flex: 1,
   },
   name: {
     color: '#171A18',
-    fontSize: 18,
-    fontWeight: '900',
+    fontFamily: 'SofiaSansCondensed_800ExtraBold',
+    fontSize: 20,
   },
   handle: {
     color: '#7C827D',
-    fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'SplineSansMono_400Regular',
+    fontSize: 12,
     marginTop: 2,
   },
   editButton: {
@@ -186,38 +155,6 @@ const styles = StyleSheet.create({
     color: '#171A18',
     fontSize: 13,
     fontWeight: '800',
-  },
-  authBox: {
-    alignItems: 'center',
-    backgroundColor: '#EEF8F3',
-    borderRadius: 8,
-    flexDirection: 'row',
-    gap: 11,
-    marginBottom: 12,
-    padding: 14,
-  },
-  authIcon: {
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 19,
-    height: 38,
-    justifyContent: 'center',
-    width: 38,
-  },
-  authCopy: {
-    flex: 1,
-  },
-  authTitle: {
-    color: '#21473E',
-    fontSize: 15,
-    fontWeight: '900',
-  },
-  authText: {
-    color: '#537269',
-    fontSize: 13,
-    fontWeight: '600',
-    lineHeight: 18,
-    marginTop: 2,
   },
   stats: {
     flexDirection: 'row',
@@ -235,8 +172,8 @@ const styles = StyleSheet.create({
   },
   statNumber: {
     color: '#171A18',
-    fontSize: 21,
-    fontWeight: '900',
+    fontFamily: 'SplineSansMono_400Regular',
+    fontSize: 22,
   },
   statLabel: {
     color: '#7C827D',
@@ -260,22 +197,21 @@ const styles = StyleSheet.create({
   },
   sparksLabel: {
     color: '#2E8B77',
-    fontSize: 12,
-    fontWeight: '900',
+    fontFamily: 'SplineSansMono_600SemiBold',
+    fontSize: 11,
     letterSpacing: 0.3,
     marginBottom: 4,
   },
   sparksBalance: {
     color: '#171A18',
-    fontSize: 34,
-    fontWeight: '900',
-    letterSpacing: -1,
-    lineHeight: 38,
+    fontFamily: 'SplineSansMono_400Regular',
+    fontSize: 36,
+    lineHeight: 40,
   },
   sparksSub: {
     color: '#537269',
-    fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'RobotoSlab_400Regular',
+    fontSize: 11,
     marginTop: 4,
   },
   sparksButton: {
@@ -300,15 +236,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     padding: 15,
   },
-  sectionLabel: {
+  impactSectionLabel: {
     color: '#9F563E',
-    fontSize: 12,
-    fontWeight: '900',
+    fontFamily: 'SplineSansMono_600SemiBold',
+    fontSize: 11,
   },
   impactTitle: {
     color: '#31241F',
-    fontSize: 20,
-    fontWeight: '900',
+    fontFamily: 'SofiaSansCondensed_800ExtraBold',
+    fontSize: 22,
     lineHeight: 26,
     marginTop: 8,
   },
@@ -326,9 +262,9 @@ const styles = StyleSheet.create({
   },
   impactText: {
     color: '#6F493B',
+    fontFamily: 'RobotoSlab_400Regular',
     flex: 1,
     fontSize: 13,
-    fontWeight: '800',
   },
   settingsList: {
     gap: 10,
@@ -347,7 +283,7 @@ const styles = StyleSheet.create({
   settingText: {
     color: '#303531',
     flex: 1,
+    fontFamily: 'RobotoSlab_500Medium',
     fontSize: 15,
-    fontWeight: '800',
   },
 });
