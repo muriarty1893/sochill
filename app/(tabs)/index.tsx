@@ -4,9 +4,10 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { withSequence, withTiming, useSharedValue } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { FollowButton } from '@/components/sochill/composable-text';
 import { FloatingModal } from '@/components/sochill/floating-modal';
-import { CircularButton } from '@/components/sochill/particles-button';
 import { ReloadButton } from '@/components/sochill/reload-button';
+import { SupporterStatus } from '@/components/sochill/supporter-status';
 import { useToast } from '@/components/sochill/toast';
 import { useSparks } from '@/contexts/sparks-context';
 import { posts } from '@/data/mock';
@@ -74,11 +75,7 @@ export default function HomeScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}>
 
-        <View style={styles.composerRow}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>ME</Text>
-          </View>
-          <Text style={styles.composerText}>What feels worth sharing?</Text>
+        <View style={styles.topBar}>
           <ReloadButton
             width={80}
             height={36}
@@ -89,29 +86,9 @@ export default function HomeScreen() {
             fontSize={13}
             onPress={onReload}
           />
-          <CircularButton
-            size={40}
-            blastRadius={42}
-            backgroundColor="#2E8B77"
-            baseIcon={<MaterialIcons name="add" size={22} color="#FFFCF6" />}
-            activeIcon={<MaterialIcons name="check" size={20} color="#FFFCF6" />}
-            onPress={() => {
-              showToast({
-                title: 'Spark',
-                subtitle: 'Particle button is alive.',
-                autodismiss: true,
-                leading: () => <MaterialIcons name="auto-awesome" size={20} color="#C86B4A" />,
-              });
-            }}
-          />
         </View>
 
-        <View style={styles.impactBand}>
-          <View>
-            <Text style={styles.bandLabel}>Spotlight nearby</Text>
-            <Text style={styles.bandTitle}>14 people boosted food access today</Text>
-          </View>
-        </View>
+        <SupporterStatus />
 
         <View style={styles.feed}>
           {posts.map((post) => (
@@ -126,9 +103,7 @@ export default function HomeScreen() {
                     {post.handle} · {post.time}
                   </Text>
                 </View>
-                <View style={styles.moodPill}>
-                  <Text style={styles.moodText}>{post.mood}</Text>
-                </View>
+                <FollowButton userId={post.id} />
               </View>
 
               <Text style={styles.body}>{post.body}</Text>
@@ -200,18 +175,11 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 18,
-    paddingBottom: 28,
+    paddingBottom: 96,
   },
-  composerRow: {
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderColor: '#ECE4D9',
-    borderRadius: 8,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 10,
+  topBar: {
+    alignItems: 'flex-end',
     marginBottom: 14,
-    padding: 12,
   },
   avatar: {
     alignItems: 'center',
@@ -225,29 +193,6 @@ const styles = StyleSheet.create({
     color: '#5E4435',
     fontSize: 12,
     fontWeight: '800',
-  },
-  composerText: {
-    color: '#747A75',
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  impactBand: {
-    backgroundColor: '#F8E5DD',
-    borderRadius: 8,
-    marginBottom: 16,
-    padding: 14,
-  },
-  bandLabel: {
-    color: '#9F563E',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  bandTitle: {
-    color: '#31241F',
-    fontFamily: 'SofiaSansCondensed_800ExtraBold',
-    fontSize: 18,
-    marginTop: 3,
   },
   feed: {
     gap: 12,
@@ -277,17 +222,6 @@ const styles = StyleSheet.create({
     fontFamily: 'SplineSansMono_400Regular',
     fontSize: 11,
     marginTop: 1,
-  },
-  moodPill: {
-    backgroundColor: '#EEF8F3',
-    borderRadius: 16,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  moodText: {
-    color: '#2E8B77',
-    fontSize: 12,
-    fontWeight: '800',
   },
   body: {
     color: '#242724',

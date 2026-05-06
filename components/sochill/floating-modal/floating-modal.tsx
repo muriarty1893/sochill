@@ -89,7 +89,7 @@ export const FloatingModal: FC<FloatingModalProps> = memo(
       const bottomDistance = interpolate(
         progress.value,
         [0, 1],
-        [FLOATING_BUTTON_SIZE / 2, screenHeight / 2 - size / 2],
+        [FLOATING_BUTTON_SIZE / 2 + 50, screenHeight / 2 - size / 2],
         Extrapolation.CLAMP,
       );
       const borderRadius = interpolate(progress.value, [0, 1], [32, 15], Extrapolation.CLAMP);
