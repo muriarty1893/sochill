@@ -22,8 +22,6 @@ export type Charity = {
   mission: string;
   accent: string;
   softAccent: string;
-  raised: number;
-  goal: number;
   supporters: string;
 };
 
@@ -93,8 +91,6 @@ export const charities: Charity[] = [
     mission: 'Keeps shared community fridges stocked with fresh groceries and pantry basics.',
     accent: '#2E8B77',
     softAccent: '#DDF2EB',
-    raised: 18400,
-    goal: 25000,
     supporters: '2.4k',
   },
   {
@@ -104,8 +100,6 @@ export const charities: Charity[] = [
     mission: 'Funds local cleanup days, reusable gear, and water testing along city coastlines.',
     accent: '#3B82B8',
     softAccent: '#DCEFFA',
-    raised: 9200,
-    goal: 15000,
     supporters: '980',
   },
   {
@@ -115,8 +109,6 @@ export const charities: Charity[] = [
     mission: 'Builds tiny reading rooms and book shelves in youth centers and shelters.',
     accent: '#C86B4A',
     softAccent: '#F8E5DD',
-    raised: 6100,
-    goal: 10000,
     supporters: '740',
   },
 ];
@@ -149,8 +141,8 @@ export const activity: ActivityItem[] = [
   {
     id: 'activity-4',
     actor: 'Open Room Books',
-    action: 'hit 61% funded',
-    detail: 'A quiet little milestone for the reading room.',
+    action: 'reached a milestone',
+    detail: 'A new shelf is ready to open in the reading room.',
     time: '1h',
     accent: '#D4A21F',
   },

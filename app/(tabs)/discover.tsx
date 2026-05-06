@@ -2,10 +2,9 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ScrollStack } from '@/components/sochill/scroll-stack';
 import { useToast } from '@/components/sochill/toast';
 import { charities } from '@/data/mock';
-
-const formatMoney = (value: number) => `$${Math.round(value / 1000)}k`;
 
 export default function DiscoverScreen() {
   const { showToast } = useToast();
@@ -49,118 +48,61 @@ export default function DiscoverScreen() {
           ))}
         </ScrollView>
 
+        <ScrollStack />
+
         <View style={styles.spotlight}>
           <View style={styles.spotlightTop}>
-            <View style={styles.spark}>
+            <View style={styles.sparkIcon}>
               <MaterialIcons name="auto-awesome" size={21} color="#C86B4A" />
             </View>
             <Text style={styles.spotlightLabel}>Partner spotlight</Text>
           </View>
           <Text style={styles.spotlightTitle}>Open Room Books is close to opening shelf number 12.</Text>
-          <View style={styles.spotlightActions}>
-            <Pressable
-              style={styles.primaryButton}
-              onPress={() => {
-                showToast({
-                  title: 'Following Open Room Books',
-                  subtitle: 'Spotlights will show up in Activity.',
-                  autodismiss: true,
-                  leading: () => <MaterialIcons name="auto-awesome" size={20} color="#C86B4A" />,
-                });
-              }}>
-              <Text style={styles.primaryButtonText}>Follow</Text>
-            </Pressable>
-            <Pressable
-              style={styles.secondaryButton}
-              onPress={() => {
-                showToast({
-                  title: 'Donation flow mocked',
-                  subtitle: 'Payments come later, after the frontend feels right.',
-                  autodismiss: true,
-                  leading: () => <MaterialIcons name="volunteer-activism" size={20} color="#2E8B77" />,
-                });
-              }}>
-              <Text style={styles.secondaryButtonText}>Donate</Text>
-            </Pressable>
-          </View>
+          <Pressable
+            style={styles.followButton}
+            onPress={() => {
+              showToast({
+                title: 'Following Open Room Books',
+                subtitle: 'Spotlights will show up in Activity.',
+                autodismiss: true,
+                leading: () => <MaterialIcons name="auto-awesome" size={20} color="#C86B4A" />,
+              });
+            }}>
+            <Text style={styles.followButtonText}>Follow</Text>
+          </Pressable>
         </View>
 
         <View style={styles.list}>
-          {charities.map((charity) => {
-            const progress = Math.min(charity.raised / charity.goal, 1);
-
-            return (
-              <View key={charity.id} style={styles.charityCard}>
-                <View style={styles.cardTop}>
-                  <View style={[styles.logo, { backgroundColor: charity.softAccent }]}>
-                    <Text style={[styles.logoText, { color: charity.accent }]}>
-                      {charity.name.slice(0, 2)}
-                    </Text>
-                  </View>
-                  <View style={styles.cardTitleBlock}>
-                    <Text style={styles.charityName}>{charity.name}</Text>
-                    <Text style={styles.charityCategory}>{charity.category}</Text>
-                  </View>
-                  <Pressable
-                    style={styles.followButton}
-                    onPress={() => {
-                      showToast({
-                        title: `Following ${charity.name}`,
-                        autodismiss: true,
-                        leading: () => <MaterialIcons name="add" size={20} color={charity.accent} />,
-                      });
-                    }}>
-                    <MaterialIcons name="add" size={20} color="#171A18" />
-                  </Pressable>
-                </View>
-
-                <Text style={styles.mission}>{charity.mission}</Text>
-
-                <View style={styles.progressTrack}>
-                  <View
-                    style={[
-                      styles.progressFill,
-                      {
-                        backgroundColor: charity.accent,
-                        width: `${progress * 100}%`,
-                      },
-                    ]}
-                  />
-                </View>
-
-                <View style={styles.cardBottom}>
-                  <Text style={styles.progressText}>
-                    {formatMoney(charity.raised)} of {formatMoney(charity.goal)}
+          {charities.map((charity) => (
+            <View key={charity.id} style={styles.charityCard}>
+              <View style={styles.cardTop}>
+                <View style={[styles.logo, { backgroundColor: charity.softAccent }]}>
+                  <Text style={[styles.logoText, { color: charity.accent }]}>
+                    {charity.name.slice(0, 2)}
                   </Text>
-                  <Text style={styles.supporters}>{charity.supporters} supporters</Text>
                 </View>
-
-                <View style={styles.actionRow}>
-                  <Pressable style={styles.quietButton}>
-                    <Text style={styles.quietButtonText}>Share</Text>
-                  </Pressable>
-                  <Pressable
-                    style={[styles.donateButton, { backgroundColor: charity.accent }]}
-                    onPress={() => {
-                      showToast({
-                        title: `Donate to ${charity.name}`,
-                        subtitle: 'Mock amount picker is next.',
-                        autodismiss: true,
-                        leading: () => (
-                          <MaterialIcons
-                            name="volunteer-activism"
-                            size={20}
-                            color={charity.accent}
-                          />
-                        ),
-                      });
-                    }}>
-                    <Text style={styles.donateButtonText}>Donate</Text>
-                  </Pressable>
+                <View style={styles.cardTitleBlock}>
+                  <Text style={styles.charityName}>{charity.name}</Text>
+                  <Text style={styles.charityCategory}>{charity.category}</Text>
                 </View>
+                <Pressable
+                  style={styles.cardFollowButton}
+                  onPress={() => {
+                    showToast({
+                      title: `Following ${charity.name}`,
+                      autodismiss: true,
+                      leading: () => <MaterialIcons name="add" size={20} color={charity.accent} />,
+                    });
+                  }}>
+                  <MaterialIcons name="add" size={20} color="#171A18" />
+                </Pressable>
               </View>
-            );
-          })}
+
+              <Text style={styles.mission}>{charity.mission}</Text>
+
+              <Text style={styles.supporters}>{charity.supporters} supporters</Text>
+            </View>
+          ))}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -243,7 +185,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
-  spark: {
+  sparkIcon: {
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 17,
@@ -262,35 +204,19 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     lineHeight: 27,
     marginTop: 14,
+    marginBottom: 16,
   },
-  spotlightActions: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 16,
-  },
-  primaryButton: {
+  followButton: {
     alignItems: 'center',
+    alignSelf: 'flex-start',
     backgroundColor: '#171A18',
     borderRadius: 20,
     height: 40,
     justifyContent: 'center',
     paddingHorizontal: 18,
   },
-  primaryButtonText: {
+  followButtonText: {
     color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  secondaryButton: {
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    height: 40,
-    justifyContent: 'center',
-    paddingHorizontal: 18,
-  },
-  secondaryButtonText: {
-    color: '#171A18',
     fontSize: 14,
     fontWeight: '800',
   },
@@ -334,7 +260,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 2,
   },
-  followButton: {
+  cardFollowButton: {
     alignItems: 'center',
     backgroundColor: '#F4F0E8',
     borderRadius: 18,
@@ -349,60 +275,10 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginTop: 14,
   },
-  progressTrack: {
-    backgroundColor: '#EEE8DD',
-    borderRadius: 6,
-    height: 9,
-    marginTop: 14,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    borderRadius: 6,
-    height: 9,
-  },
-  cardBottom: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-  },
-  progressText: {
-    color: '#171A18',
-    fontSize: 13,
-    fontWeight: '800',
-  },
   supporters: {
     color: '#7C827D',
     fontSize: 13,
     fontWeight: '700',
-  },
-  actionRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 14,
-  },
-  quietButton: {
-    alignItems: 'center',
-    backgroundColor: '#F4F0E8',
-    borderRadius: 20,
-    flex: 1,
-    height: 40,
-    justifyContent: 'center',
-  },
-  quietButtonText: {
-    color: '#4B514C',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  donateButton: {
-    alignItems: 'center',
-    borderRadius: 20,
-    flex: 1,
-    height: 40,
-    justifyContent: 'center',
-  },
-  donateButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '800',
+    marginTop: 10,
   },
 });
