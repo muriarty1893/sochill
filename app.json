@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "sochill",
-    "slug": "sochill",
+    "name": "sparkle",
+    "slug": "sparkle",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "sochill",
+    "scheme": "sparkle",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -20,7 +20,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.sochill"
+      "package": "com.anonymous.sparkle"
     },
     "web": {
       "output": "static",
