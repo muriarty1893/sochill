@@ -1,8 +1,8 @@
 import { type FC, memo } from 'react';
+import { Pressable } from 'react-native';
 
 import { AntDesign } from '@expo/vector-icons';
-import { PressableScale } from 'pressto';
-import {
+import Animated, {
   Extrapolation,
   interpolate,
   type SharedValue,
@@ -30,22 +30,21 @@ export const AddCloseIcon: FC<AddCloseIconProps> = memo(({ onPress, progress }) 
   }, []);
 
   return (
-    <PressableScale
+    <Pressable
       onPress={onPress}
-      style={[
-        {
-          position: 'absolute',
-          width: FLOATING_BUTTON_SIZE,
-          aspectRatio: 1,
-          top: 0,
-          left: 0,
-          justifyContent: 'center',
-          alignItems: 'center',
-        },
-        rIconStyle,
-      ]}>
-      <AntDesign name="plus" size={28} color="black" />
-    </PressableScale>
+      style={{
+        position: 'absolute',
+        width: FLOATING_BUTTON_SIZE,
+        aspectRatio: 1,
+        top: 0,
+        left: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}>
+      <Animated.View style={rIconStyle}>
+        <AntDesign name="plus" size={28} color="black" />
+      </Animated.View>
+    </Pressable>
   );
 });
 

@@ -1,8 +1,7 @@
 import { useCallback, useMemo, useRef } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AntDesign, FontAwesome6 } from '@expo/vector-icons';
-import { PressableScale } from 'pressto';
 import Animated, {
   cancelAnimation,
   Extrapolation,
@@ -156,10 +155,10 @@ export const CircularButton: React.FC<CircularButtonProps> = ({
           circleRadius={2}
         />
       </View>
-      <PressableScale style={boxStyle} onPress={onPressHandler}>
+      <Pressable style={boxStyle} onPress={onPressHandler}>
         <Animated.View style={[styles.iconContainer, rBaseIconStyle]}>{baseIcon}</Animated.View>
         <Animated.View style={[styles.iconContainer, rActiveIconStyle]}>{activeIcon}</Animated.View>
-      </PressableScale>
+      </Pressable>
     </View>
   );
 };

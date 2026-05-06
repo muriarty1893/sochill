@@ -1,11 +1,11 @@
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AntDesign } from '@expo/vector-icons';
-import { PressableScale } from 'pressto';
 import Animated, {
   interpolate,
   useAnimatedStyle,
   useDerivedValue,
+  useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
 
@@ -35,10 +35,13 @@ export const Tab = ({
     });
   }, [isActive]);
 
+  const pressScale = useSharedValue(1);
+
   const rTabStyle = useAnimatedStyle(() => {
     return {
       width: interpolate(progress.value, [0, 1], [minWidth, maxWidth]),
       backgroundColor: isActive ? '#171A18' : '#F4F0E8',
+      transform: [{ scale: pressScale.value }],
     };
   }, [isActive]);
 
@@ -63,7 +66,10 @@ export const Tab = ({
   }, []);
 
   return (
-    <PressableScale onPress={onPress}>
+    <Pressable
+      onPress={onPress}
+      onPressIn={() => { pressScale.value = withSpring(0.92, { stiffness: 400, damping: 20 }); }}
+      onPressOut={() => { pressScale.value = withSpring(1, { stiffness: 400, damping: 20 }); }}>
       <Animated.View style={[rTabStyle, styles.container]}>
         <View style={styles.innerContainer}>
           <Animated.View style={[styles.iconContainer, rIconStyle]}>
@@ -74,7 +80,7 @@ export const Tab = ({
           </Animated.Text>
         </View>
       </Animated.View>
-    </PressableScale>
+    </Pressable>
   );
 };
 

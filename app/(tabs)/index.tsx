@@ -5,7 +5,6 @@ import { withSequence, withTiming, useSharedValue } from 'react-native-reanimate
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FloatingModal } from '@/components/sochill/floating-modal';
-import { IMessageStack } from '@/components/sochill/imessage-stack';
 import { CircularButton } from '@/components/sochill/particles-button';
 import { ReloadButton } from '@/components/sochill/reload-button';
 import { useToast } from '@/components/sochill/toast';
@@ -111,8 +110,6 @@ export default function HomeScreen() {
             <Text style={styles.bandButtonText}>See</Text>
           </Pressable>
         </View>
-
-        <IMessageStack />
 
         <View style={styles.feed}>
           {posts.map((post) => (

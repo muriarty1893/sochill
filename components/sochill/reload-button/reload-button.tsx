@@ -1,8 +1,7 @@
 import { useMemo, type FC } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import * as Haptics from 'expo-haptics';
-import { PressableScale } from 'pressto';
 import { Path } from 'react-native-svg';
 import Animated, {
   type SharedValue,
@@ -90,7 +89,7 @@ export const ReloadButton: FC<ReloadButtonProps> = ({
   }));
 
   return (
-    <PressableScale onPress={onPress} style={style}>
+    <Pressable onPress={onPress} style={style}>
       <Animated.View style={rContainerStyle}>
         <Svg height={height} width={width} style={StyleSheet.absoluteFill}>
           <AnimatedPath
@@ -125,7 +124,7 @@ export const ReloadButton: FC<ReloadButtonProps> = ({
           </Animated.Text>
         </View>
       </Animated.View>
-    </PressableScale>
+    </Pressable>
   );
 };
 
