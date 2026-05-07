@@ -1,14 +1,18 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 
+import { useAuth } from '@/contexts/auth-context';
 import { ComposableText } from './composable-text';
 
 type FollowButtonProps = {
   userId: string;
 };
 
-export function FollowButton({ userId: _ }: FollowButtonProps) {
+export function FollowButton({ userId }: FollowButtonProps) {
+  const { user } = useAuth();
   const [following, setFollowing] = useState(false);
+
+  if (user?.id === userId) return null;
 
   return (
     <Pressable

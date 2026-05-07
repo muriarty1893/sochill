@@ -1,12 +1,24 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { activity } from '@/data/mock';
+import { FriendSparkCard } from '@/components/sochill/friend-spark';
+import { useActivity } from '@/hooks/use-activity';
 
 export default function ActivityScreen() {
+  const { friendSparks, causesCount, loading } = useActivity();
   const [readAll, setReadAll] = useState(false);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <View style={styles.center}>
+          <ActivityIndicator color="#2E8B77" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -16,18 +28,13 @@ export default function ActivityScreen() {
 
         <View style={styles.summary}>
           <View style={styles.summaryItem}>
-            <Text style={styles.summaryNumber}>126</Text>
-            <Text style={styles.summaryLabel}>reactions</Text>
+            <Text style={styles.summaryNumber}>{causesCount}</Text>
+            <Text style={styles.summaryLabel}>causes sparked</Text>
           </View>
           <View style={styles.summaryDivider} />
           <View style={styles.summaryItem}>
-            <Text style={styles.summaryNumber}>18</Text>
-            <Text style={styles.summaryLabel}>boosts</Text>
-          </View>
-          <View style={styles.summaryDivider} />
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryNumber}>4</Text>
-            <Text style={styles.summaryLabel}>causes</Text>
+            <Text style={styles.summaryNumber}>{friendSparks.length}</Text>
+            <Text style={styles.summaryLabel}>friend sparks</Text>
           </View>
           <View style={styles.summaryDivider} />
           <Pressable style={styles.doneAllButton} onPress={() => setReadAll(true)}>
@@ -35,30 +42,19 @@ export default function ActivityScreen() {
           </Pressable>
         </View>
 
-        <View style={styles.toastPreview}>
-          <View style={styles.toastIcon}>
-            <MaterialIcons name="favorite" size={19} color="#C86B4A" />
+        {friendSparks.length > 0 ? (
+          <>
+            <Text style={styles.sectionLabel}>Friends activity</Text>
+            {friendSparks.map(entry => (
+              <FriendSparkCard key={entry.id} entry={entry} />
+            ))}
+          </>
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>No activity yet</Text>
+            <Text style={styles.emptyText}>When friends start sparking causes, their activity will show up here. Follow people to see what they support.</Text>
           </View>
-          <View style={styles.toastCopy}>
-            <Text style={styles.toastTitle}>New boost from Can</Text>
-            <Text style={styles.toastText}>Your beach cleanup post is picking up attention.</Text>
-          </View>
-        </View>
-
-        <View style={styles.list}>
-          {activity.map((item) => (
-            <View key={item.id} style={[styles.activityItem, readAll && styles.activityItemRead]}>
-              <View style={[styles.marker, { backgroundColor: item.accent }]} />
-              <View style={styles.itemCopy}>
-                <Text style={styles.itemTitle}>
-                  <Text style={styles.actor}>{item.actor}</Text> {item.action}
-                </Text>
-                <Text style={styles.itemDetail}>{item.detail}</Text>
-              </View>
-              <Text style={styles.time}>{item.time}</Text>
-            </View>
-          ))}
-        </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -68,6 +64,11 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: '#FFFCF6',
+  },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   content: {
     padding: 18,
@@ -97,6 +98,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
     marginTop: 3,
+    textAlign: 'center',
   },
   summaryDivider: {
     backgroundColor: '#EEE8DD',
@@ -109,82 +111,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 4,
   },
-  toastPreview: {
-    alignItems: 'center',
-    backgroundColor: '#171A18',
-    borderRadius: 8,
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 14,
-    padding: 12,
-  },
-  toastIcon: {
-    alignItems: 'center',
-    backgroundColor: '#FFF2CF',
-    borderRadius: 18,
-    height: 36,
-    justifyContent: 'center',
-    width: 36,
-  },
-  toastCopy: {
-    flex: 1,
-  },
-  toastTitle: {
-    color: '#FFFFFF',
+  sectionLabel: {
+    color: '#7C827D',
     fontFamily: 'SofiaSansCondensed_800ExtraBold',
-    fontSize: 16,
+    fontSize: 13,
+    letterSpacing: 0.5,
+    marginBottom: 8,
+    marginTop: 4,
+    textTransform: 'uppercase',
   },
-  toastText: {
-    color: '#D4D1C9',
-    fontFamily: 'RobotoSlab_400Regular',
-    fontSize: 12,
-    marginTop: 2,
-  },
-  list: {
-    gap: 10,
-  },
-  activityItem: {
+  emptyState: {
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderColor: '#ECE4D9',
-    borderRadius: 8,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 12,
-    padding: 13,
-  },
-  activityItemRead: {
-    opacity: 0.4,
-  },
-  marker: {
-    borderRadius: 7,
-    height: 14,
-    width: 14,
-  },
-  itemCopy: {
     flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+    paddingTop: 40,
   },
-  itemTitle: {
-    color: '#303531',
-    fontSize: 15,
-    fontWeight: '700',
-    lineHeight: 20,
-  },
-  actor: {
+  emptyTitle: {
     color: '#171A18',
     fontFamily: 'SofiaSansCondensed_800ExtraBold',
-    fontSize: 16,
+    fontSize: 24,
+    marginBottom: 10,
+    textAlign: 'center',
   },
-  itemDetail: {
-    color: '#747A75',
+  emptyText: {
+    color: '#7C827D',
     fontFamily: 'RobotoSlab_400Regular',
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: 3,
-  },
-  time: {
-    color: '#90968F',
-    fontFamily: 'SplineSansMono_400Regular',
-    fontSize: 11,
+    fontSize: 14,
+    lineHeight: 22,
+    textAlign: 'center',
   },
 });

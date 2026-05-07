@@ -47,6 +47,22 @@ export type ActivityItem = {
   accent: string;
 };
 
+export type FriendUser = {
+  id: string;
+  name: string;
+  color: string;
+  hasPfp: boolean;
+};
+
+export type FriendSparkEntry = {
+  id: string;
+  charityName: string;
+  charityAccent: string;
+  friends: FriendUser[];
+  totalCount: number;
+  time: string;
+};
+
 export const posts: FeedPost[] = [
   {
     id: 'post-1',
@@ -210,6 +226,36 @@ export const charityPosts: CharityPost[] = [
     title: '1,847 trees planted. 153 to go before spring.',
     body: 'Every native tree we plant lowers city heat and improves air quality for thousands of people. We\'re so close to our goal — help us finish what we started.',
     supporters: '1.8k',
+  },
+];
+
+export const friendSparks: FriendSparkEntry[] = [
+  {
+    id: 'fs-1',
+    charityName: 'Blue Shore Cleanup',
+    charityAccent: '#3B82B8',
+    friends: [
+      { id: 'f1', name: 'Mina', color: '#2E8B77', hasPfp: false },
+      { id: 'f2', name: 'Can', color: '#3B82B8', hasPfp: false },
+      { id: 'f3', name: 'Lara', color: '#C86B4A', hasPfp: false },
+      { id: 'f4', name: 'Ayse', color: '#8B5E2E', hasPfp: false },
+      { id: 'f5', name: 'Berk', color: '#6B4CA8', hasPfp: false },
+      { id: 'f6', name: 'Deniz', color: '#2E7D4F', hasPfp: false },
+    ],
+    totalCount: 14,
+    time: '12m',
+  },
+  {
+    id: 'fs-2',
+    charityName: 'Neighborhood Pantry Fund',
+    charityAccent: '#2E8B77',
+    friends: [
+      { id: 'f2', name: 'Can', color: '#3B82B8', hasPfp: false },
+      { id: 'f4', name: 'Ayse', color: '#8B5E2E', hasPfp: false },
+      { id: 'f6', name: 'Deniz', color: '#2E7D4F', hasPfp: false },
+    ],
+    totalCount: 5,
+    time: '1h',
   },
 ];
 

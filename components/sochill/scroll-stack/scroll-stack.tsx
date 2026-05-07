@@ -10,7 +10,6 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { useToast } from '@/components/sochill/toast';
-import { useSparks } from '@/contexts/sparks-context';
 import type { CharityPost } from '@/data/mock';
 import { SwipeCard } from './scroll-card';
 
@@ -19,11 +18,12 @@ const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.35;
 
 type SwipeStackProps = {
   posts: CharityPost[];
+  supportedIds?: string[];
+  onSpark?: (postId: string) => Promise<boolean>;
 };
 
-export const ScrollStack = ({ posts }: SwipeStackProps) => {
+export const ScrollStack = ({ posts, onSpark }: SwipeStackProps) => {
   const { showToast } = useToast();
-  const { support } = useSparks();
   const [isEmpty, setIsEmpty] = useState(false);
   const [swipeCount, setSwipeCount] = useState(0);
 
@@ -31,7 +31,7 @@ export const ScrollStack = ({ posts }: SwipeStackProps) => {
   const panX = useSharedValue(0);
 
   const handleSupport = (postId: string, charityName: string) => {
-    support(postId);
+    onSpark?.(postId);
     showToast({
       title: `✦ Sparked! ${charityName} gets 1 spark`,
       autodismiss: true,

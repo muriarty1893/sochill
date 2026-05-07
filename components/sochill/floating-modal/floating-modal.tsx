@@ -1,4 +1,5 @@
-import { StyleSheet, useWindowDimensions } from 'react-native';
+import { useEffect } from 'react';
+import { Keyboard, StyleSheet, useWindowDimensions } from 'react-native';
 
 import { type FC, memo, type ReactNode } from 'react';
 
@@ -28,6 +29,17 @@ type FloatingModalProps = {
 export const FloatingModal: FC<FloatingModalProps> = memo(
   ({ children, title, doneLabel, onDone }) => {
     const isOpened = useSharedValue(false);
+    const keyboardOffset = useSharedValue(0);
+
+    useEffect(() => {
+      const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
+        keyboardOffset.value = withTiming(e.endCoordinates.height, { duration: 250 });
+      });
+      const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+        keyboardOffset.value = withTiming(0, { duration: 200 });
+      });
+      return () => { showSub.remove(); hideSub.remove(); };
+    }, [keyboardOffset]);
 
     const progress = useDerivedValue<number>(() => {
       return withTiming(isOpened.value ? 1 : 0);
@@ -46,17 +58,12 @@ export const FloatingModal: FC<FloatingModalProps> = memo(
 
     const panGesture = Gesture.Pan()
       .onUpdate(({ translationX, translationY }) => {
-        if (!isOpened.value) {
-          return;
-        }
-
+        if (!isOpened.value) return;
         translateX.value = translationX;
         translateY.value = translationY;
       })
       .onFinalize((event) => {
-        if (!isOpened.value) {
-          return;
-        }
+        if (!isOpened.value) return;
 
         const isDraggingDown = event.translationY > 0;
         const isDraggingDownEnoughToClose = isDraggingDown && scale.value < 0.95;
@@ -65,12 +72,8 @@ export const FloatingModal: FC<FloatingModalProps> = memo(
           isOpened.value = false;
         }
 
-        translateX.value = withSpring(0, {
-          overshootClamping: true,
-        });
-        translateY.value = withSpring(0, {
-          overshootClamping: true,
-        });
+        translateX.value = withSpring(0, { overshootClamping: true });
+        translateY.value = withSpring(0, { overshootClamping: true });
       });
 
     const rOpenedModalStyle = useAnimatedStyle(() => {
@@ -86,10 +89,12 @@ export const FloatingModal: FC<FloatingModalProps> = memo(
         [FLOATING_BUTTON_SIZE / 2, screenWidth * 0.05],
         Extrapolation.CLAMP,
       );
+      const centeredBottom = screenHeight / 2 - size / 2;
+      const keyboardAdjustedBottom = centeredBottom + keyboardOffset.value * 0.6;
       const bottomDistance = interpolate(
         progress.value,
         [0, 1],
-        [FLOATING_BUTTON_SIZE / 2 + 50, screenHeight / 2 - size / 2],
+        [FLOATING_BUTTON_SIZE / 2 + 50, keyboardAdjustedBottom],
         Extrapolation.CLAMP,
       );
       const borderRadius = interpolate(progress.value, [0, 1], [32, 15], Extrapolation.CLAMP);
@@ -101,15 +106,9 @@ export const FloatingModal: FC<FloatingModalProps> = memo(
         right: rightDistance,
         borderRadius,
         transform: [
-          {
-            scale: scale.value,
-          },
-          {
-            translateX: translateX.value,
-          },
-          {
-            translateY: translateY.value,
-          },
+          { scale: scale.value },
+          { translateX: translateX.value },
+          { translateY: translateY.value },
         ],
       };
     }, [screenWidth, screenHeight]);

@@ -1,13 +1,44 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useEffect } from 'react';
 import { useToast } from '@/components/sochill/toast';
+import { useAuth } from '@/contexts/auth-context';
 import { useSparks } from '@/contexts/sparks-context';
+import { useCharityPosts } from '@/hooks/use-charity-posts';
+import { useProfile } from '@/hooks/use-profile';
+
+function getInitials(name: string): string {
+  const words = name.trim().split(/\s+/);
+  return words.slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('');
+}
 
 export default function ProfileScreen() {
   const { balance, defaultAmount } = useSparks();
+  const { posts: charityPosts, supportedIds } = useCharityPosts();
   const { showToast } = useToast();
+  const { signOut } = useAuth();
+  const { profile, updateProfile } = useProfile();
+  const router = useRouter();
+
+  const [profileName, setProfileName] = useState('');
+  const [profileHandle, setProfileHandle] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    if (profile) {
+      setProfileName(profile.username);
+      setProfileHandle(profile.handle);
+    }
+  }, [profile]);
+
+  const initials = getInitials(profileName) || 'SP';
+
+  const supportedPosts = charityPosts.filter(p => supportedIds.includes(p.id));
+  const supportedCategories = [...new Set(supportedPosts.map(p => p.category))];
 
   const showComingSoon = () => {
     showToast({ title: 'Coming soon', autodismiss: true });
@@ -21,14 +52,46 @@ export default function ProfileScreen() {
 
         <View style={styles.profileBlock}>
           <View style={styles.bigAvatar}>
-            <Text style={styles.bigAvatarText}>SC</Text>
+            <Text style={styles.bigAvatarText}>{getInitials(profileName) || 'SP'}</Text>
           </View>
           <View style={styles.profileCopy}>
-            <Text style={styles.name}>sochill user</Text>
-            <Text style={styles.handle}>@newhere</Text>
+            {isEditing ? (
+              <>
+                <TextInput
+                  style={styles.nameInput}
+                  value={profileName}
+                  onChangeText={setProfileName}
+                  placeholder="Your name"
+                  placeholderTextColor="#A0A59F"
+                  autoFocus
+                />
+                <TextInput
+                  style={styles.handleInput}
+                  value={profileHandle}
+                  onChangeText={setProfileHandle}
+                  placeholder="@handle"
+                  placeholderTextColor="#A0A59F"
+                  autoCapitalize="none"
+                />
+              </>
+            ) : (
+              <>
+                <Text style={styles.name}>{profileName}</Text>
+                <Text style={styles.handle}>{profileHandle}</Text>
+              </>
+            )}
           </View>
-          <Pressable style={styles.editButton} onPress={() => showToast({ title: 'Edit profile coming soon', autodismiss: true })}>
-            <Text style={styles.editButtonText}>Edit</Text>
+          <Pressable
+            style={[styles.editButton, isEditing && styles.editButtonActive]}
+            onPress={async () => {
+              if (isEditing) {
+                await updateProfile({ username: profileName, handle: profileHandle });
+              }
+              setIsEditing(e => !e);
+            }}>
+            <Text style={[styles.editButtonText, isEditing && styles.editButtonTextActive]}>
+              {isEditing ? 'Save' : 'Edit'}
+            </Text>
           </Pressable>
         </View>
 
@@ -42,7 +105,7 @@ export default function ProfileScreen() {
             <Text style={styles.statLabel}>followers</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>7</Text>
+            <Text style={styles.statNumber}>{supportedIds.length}</Text>
             <Text style={styles.statLabel}>causes</Text>
           </View>
         </View>
@@ -70,21 +133,37 @@ export default function ProfileScreen() {
 
         <View style={styles.impactCard}>
           <Text style={styles.impactSectionLabel}>Impact this month</Text>
-          <Text style={styles.impactTitle}>You helped send attention to three community campaigns.</Text>
-          <View style={styles.impactRow}>
-            <View style={styles.impactDot} />
-            <Text style={styles.impactText}>Food access, books, and shoreline cleanup</Text>
-          </View>
+          {supportedIds.length > 0 ? (
+            <>
+              <Text style={styles.impactTitle}>
+                You supported {supportedIds.length} {supportedIds.length === 1 ? 'cause' : 'causes'} this month.
+              </Text>
+              {supportedCategories.length > 0 && (
+                <View style={styles.impactRow}>
+                  <View style={styles.impactDot} />
+                  <Text style={styles.impactText}>{supportedCategories.join(', ')}</Text>
+                </View>
+              )}
+            </>
+          ) : (
+            <>
+              <Text style={styles.impactTitle}>You helped send attention to three community campaigns.</Text>
+              <View style={styles.impactRow}>
+                <View style={styles.impactDot} />
+                <Text style={styles.impactText}>Food access, books, and shoreline cleanup</Text>
+              </View>
+            </>
+          )}
         </View>
 
         <View style={styles.settingsList}>
           {[
-            { icon: 'person-add', title: 'Invite friends' },
-            { icon: 'volunteer-activism', title: 'Saved charities' },
-            { icon: 'privacy-tip', title: 'Privacy' },
-            { icon: 'settings', title: 'Settings' },
+            { icon: 'person-add', title: 'Invite friends', onPress: showComingSoon },
+            { icon: 'volunteer-activism', title: 'Saved charities', onPress: showComingSoon },
+            { icon: 'privacy-tip', title: 'Privacy', onPress: () => router.push('/privacy') },
+          { icon: 'logout', title: 'Sign out', onPress: signOut },
           ].map((item) => (
-            <Pressable key={item.title} style={styles.settingRow} onPress={showComingSoon}>
+            <Pressable key={item.title} style={styles.settingRow} onPress={item.onPress}>
               <MaterialIcons name={item.icon as keyof typeof MaterialIcons.glyphMap} size={21} color="#4E554F" />
               <Text style={styles.settingText}>{item.title}</Text>
               <MaterialIcons name="chevron-right" size={22} color="#A0A59F" />
@@ -143,6 +222,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
   },
+  nameInput: {
+    borderBottomColor: '#ECE4D9',
+    borderBottomWidth: 1,
+    color: '#171A18',
+    fontFamily: 'SofiaSansCondensed_800ExtraBold',
+    fontSize: 20,
+    paddingVertical: 2,
+  },
+  handleInput: {
+    borderBottomColor: '#ECE4D9',
+    borderBottomWidth: 1,
+    color: '#7C827D',
+    fontFamily: 'SplineSansMono_400Regular',
+    fontSize: 12,
+    marginTop: 4,
+    paddingVertical: 2,
+  },
   editButton: {
     alignItems: 'center',
     backgroundColor: '#F4F0E8',
@@ -151,10 +247,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 15,
   },
+  editButtonActive: {
+    backgroundColor: '#2E8B77',
+  },
   editButtonText: {
     color: '#171A18',
     fontSize: 13,
     fontWeight: '800',
+  },
+  editButtonTextActive: {
+    color: '#FFFFFF',
   },
   stats: {
     flexDirection: 'row',
