@@ -9,7 +9,7 @@ import {
   Vibration,
   Pressable,
 } from 'react-native';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import ReAnimated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-reanimated';
@@ -23,6 +23,8 @@ import Button from '@/components/global/Button';
 import InputText from '@/components/auth/InputText';
 import InputPassword from '@/components/auth/InputPassword';
 import AnimatedScreen from '@/components/global/AnimatedScreen';
+import { ForgotPasswordModal } from '@/components/auth/ForgotPasswordModal';
+import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 
 const { width } = Dimensions.get('window');
 
@@ -34,8 +36,9 @@ export default function SignInScreen() {
   const buttonColor = !isDark ? 'white' : 'black';
   const borderColor = isDark ? 'white' : 'black';
   const [loading, setLoading] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
 
-  const { control, handleSubmit, formState: { errors } } = useForm({
+  const { control, handleSubmit, formState: { errors }, getValues } = useForm({
     defaultValues: { email: '', password: '' },
   });
 
@@ -107,7 +110,7 @@ export default function SignInScreen() {
                 sign in to access your account
               </Text>
 
-              <View style={{ gap: 30, marginTop: 70 }}>
+              <View style={{ gap: 30, marginTop: 70, alignSelf: 'stretch' }}>
                 <Animated.View style={{ transform: [{ translateX: animEmail.current }] }}>
                   <Controller
                     control={control}
@@ -135,6 +138,12 @@ export default function SignInScreen() {
                     name="password"
                   />
                 </Animated.View>
+
+                <Pressable onPress={() => setShowResetModal(true)} style={{ alignSelf: 'flex-end', marginTop: 8 }}>
+                  <Text style={{ color: isDark ? '#aaa' : '#555', fontFamily: 'jakara', fontSize: 13 }}>
+                    Forgot password?
+                  </Text>
+                </Pressable>
               </View>
             </View>
           </ScrollView>
@@ -143,6 +152,12 @@ export default function SignInScreen() {
             <Button loading={loading} onPress={() => { Keyboard.dismiss(); handleSubmit(onSubmit)(); }}>
               <Text style={{ fontFamily: 'jakaraBold', fontSize: 15, color: buttonColor }}>Login</Text>
             </Button>
+            <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', gap: 10, marginTop: 16 }}>
+              <View style={{ flex: 1, height: 1, backgroundColor: isDark ? '#333' : '#ddd' }} />
+              <Text style={{ color: isDark ? '#666' : '#aaa', fontFamily: 'jakara', fontSize: 13 }}>or</Text>
+              <View style={{ flex: 1, height: 1, backgroundColor: isDark ? '#333' : '#ddd' }} />
+            </View>
+            <GoogleSignInButton />
             <View style={{ flexDirection: 'row', width: '100%', height: 50, justifyContent: 'center', alignItems: 'center' }}>
               <Pressable
                 style={{
@@ -159,6 +174,11 @@ export default function SignInScreen() {
           </View>
         </ReAnimated.View>
       </TouchableWithoutFeedback>
+      <ForgotPasswordModal
+        visible={showResetModal}
+        initialEmail={getValues('email')}
+        onClose={() => setShowResetModal(false)}
+      />
     </AnimatedScreen>
   );
 }

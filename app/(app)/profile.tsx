@@ -14,7 +14,7 @@ import Animated, {
 import { StatusBar } from 'expo-status-bar';
 import { useGetMode } from '@/hooks/use-mode';
 import { useAppSelector, useAppDispatch } from '@/redux/hooks';
-import { getMyProfile, getFollowDetails, getUserPosts, updateProfile, uploadAvatar } from '@/lib/api';
+import { getMyProfile, getFollowDetails, getUserPostsAndReposts, updateProfile, uploadAvatar, getNotifications, markNotificationsRead } from '@/lib/api';
 import { updateUser } from '@/redux/slices/user';
 import AnimatedScreen from '@/components/global/AnimatedScreen';
 import PostBuilder from '@/components/post/PostBuilder';
@@ -34,6 +34,8 @@ export default function ProfileScreen() {
   const user = useAppSelector((s) => s.user.data);
   const [followData, setFollowData] = useState<any>(null);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'posts' | 'activity'>('posts');
   const [refreshing, setRefreshing] = useState(false);
   const offset = useSharedValue(0);
 
@@ -42,12 +44,15 @@ export default function ProfileScreen() {
 
   const load = useCallback(async () => {
     if (!user?.id) return;
-    const [fd, userPosts] = await Promise.all([
+    const [fd, userPosts, notifs] = await Promise.all([
       getFollowDetails(user.id),
-      getUserPosts(user.id),
-    ]).catch(() => [null, []]);
+      getUserPostsAndReposts(user.id),
+      getNotifications(),
+    ]).catch(() => [null, [], []]);
     setFollowData(fd);
     setPosts(userPosts as Post[]);
+    setNotifications((notifs as any[]) ?? []);
+    markNotificationsRead();
   }, [user?.id]);
 
   useEffect(() => { load(); }, [load]);
@@ -170,10 +175,53 @@ export default function ProfileScreen() {
             </View>
           </View>
 
-          <View style={{ height: 1, backgroundColor: isDark ? '#222' : '#eee', marginTop: 16 }} />
+          {/* Tab toggle */}
+          <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderColor: isDark ? '#222' : '#eee', marginTop: 16 }}>
+            {(['posts', 'activity'] as const).map((tab) => (
+              <Pressable
+                key={tab}
+                onPress={() => setActiveTab(tab)}
+                style={{ flex: 1, alignItems: 'center', paddingVertical: 12, borderBottomWidth: 2, borderBottomColor: activeTab === tab ? (isDark ? 'white' : 'black') : 'transparent' }}
+              >
+                <Text style={{ color: activeTab === tab ? color : 'grey', fontFamily: 'jakaraBold', fontSize: 13, textTransform: 'capitalize' }}>
+                  {tab === 'posts' ? 'Posts' : 'Activity'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
 
           {/* Posts */}
-          {posts.map((post) => <PostBuilder key={post.id} post={post} />)}
+          {activeTab === 'posts' && posts.map((post) => <PostBuilder key={post.id} post={post} />)}
+
+          {/* Activity */}
+          {activeTab === 'activity' && (
+            notifications.length === 0 ? (
+              <View style={{ alignItems: 'center', marginTop: 40 }}>
+                <Text style={{ color: 'grey', fontFamily: 'mulish', fontSize: 14 }}>No activity yet</Text>
+              </View>
+            ) : notifications.map((item) => {
+              const typeLabel: Record<string, string> = {
+                reaction: 'reacted to your post',
+                follow: 'started following you',
+                reply: 'commented on your post',
+                charity_milestone: 'reached a milestone',
+              };
+              return (
+                <View key={item.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderBottomWidth: 0.5, borderColor: isDark ? '#222' : '#eee' }}>
+                  <View style={{ width: 44, height: 44, borderRadius: 22, overflow: 'hidden', backgroundColor: isDark ? '#333' : '#eee', justifyContent: 'center', alignItems: 'center' }}>
+                    {item.actor?.avatar_url
+                      ? <Image source={{ uri: item.actor.avatar_url }} style={{ width: 44, height: 44 }} contentFit="cover" />
+                      : <Text style={{ color, fontFamily: 'jakaraBold' }}>{item.actor?.username?.[0]?.toUpperCase() ?? '?'}</Text>
+                    }
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color, fontFamily: 'jakaraBold', fontSize: 14 }}>{item.actor?.display_name ?? item.actor?.username ?? 'Someone'}</Text>
+                    <Text style={{ color: 'grey', fontFamily: 'jakara', fontSize: 12 }}>{typeLabel[item.action_type] ?? 'interacted with you'}</Text>
+                  </View>
+                </View>
+              );
+            })
+          )}
         </Animated.ScrollView>
       </View>
     </AnimatedScreen>

@@ -1,9 +1,9 @@
-import { View, Pressable } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { useState } from 'react';
 import { useGetMode } from '@/hooks/use-mode';
 import LikeButton from './LikeButton';
 import RepostButton from './RepostButton';
-import { ShareUnfocused } from '../icons';
+import { ShareUnfocused, CommentIcon } from '../icons';
 import { likePost, repost } from '@/lib/api';
 import { useAppDispatch } from '@/redux/hooks';
 import { toggleLike } from '@/redux/slices/posts';
@@ -11,6 +11,7 @@ import { toggleLike } from '@/redux/slices/posts';
 export default function Engagements({
   id,
   like,
+  comments,
   isLiked,
   isReposted,
 }: {
@@ -23,6 +24,7 @@ export default function Engagements({
   const isDark = useGetMode();
   const dispatch = useAppDispatch();
   const shareColor = isDark ? '#91EC09' : '#639E0B';
+  const mutedColor = isDark ? '#666' : '#999';
 
   const [likeAmount, setLikeAmount] = useState(like);
   const [clicked, setClicked] = useState(isLiked);
@@ -45,8 +47,8 @@ export default function Engagements({
   };
 
   return (
-    <View style={{ flexDirection: 'row', paddingHorizontal: 20, alignItems: 'center', gap: 6, justifyContent: 'space-between' }}>
-      <View style={{ flexDirection: 'row', gap: 10 }}>
+    <View style={{ flexDirection: 'row', paddingHorizontal: 4, alignItems: 'center', gap: 6, justifyContent: 'space-between' }}>
+      <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
         <LikeButton
           isLiked={isLiked}
           text={likeAmount.toString()}
@@ -58,6 +60,12 @@ export default function Engagements({
           clicked={reposted}
           setReposted={handleRepost}
         />
+        {comments !== undefined && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <CommentIcon size={18} color={mutedColor} />
+            <Text style={{ color: mutedColor, fontFamily: 'jakara', fontSize: 13 }}>{comments}</Text>
+          </View>
+        )}
       </View>
       <Pressable>
         <ShareUnfocused size={20} color={shareColor} />

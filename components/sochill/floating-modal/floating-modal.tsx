@@ -1,8 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Keyboard, StyleSheet, useWindowDimensions } from 'react-native';
-
 import { type FC, memo, type ReactNode } from 'react';
-
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Extrapolation,
@@ -13,37 +11,37 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-
 import { AddCloseIcon } from './add-close-icon';
 import { AnimatedBackdrop } from './animated-backdrop';
-import { FLOATING_BUTTON_SIZE } from './constants';
+import { FLOATING_BUTTON_SIZE, TAB_BAR_BOTTOM, TAB_BAR_HEIGHT } from './constants';
 import { ModalContent } from './modal-content';
 
 type FloatingModalProps = {
   children?: ReactNode;
   title?: string;
   doneLabel?: string;
-  onDone?: () => void;
+  isDark?: boolean;
+  // Return false to keep modal open (e.g. validation failed). Any other return closes it.
+  onDone?: () => Promise<boolean | void> | boolean | void;
 };
 
 export const FloatingModal: FC<FloatingModalProps> = memo(
-  ({ children, title, doneLabel, onDone }) => {
+  ({ children, title, doneLabel, isDark, onDone }) => {
     const isOpened = useSharedValue(false);
     const keyboardOffset = useSharedValue(0);
+    const [doneLoading, setDoneLoading] = useState(false);
 
     useEffect(() => {
-      const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
+      const show = Keyboard.addListener('keyboardDidShow', (e) => {
         keyboardOffset.value = withTiming(e.endCoordinates.height, { duration: 250 });
       });
-      const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+      const hide = Keyboard.addListener('keyboardDidHide', () => {
         keyboardOffset.value = withTiming(0, { duration: 200 });
       });
-      return () => { showSub.remove(); hideSub.remove(); };
+      return () => { show.remove(); hide.remove(); };
     }, [keyboardOffset]);
 
-    const progress = useDerivedValue<number>(() => {
-      return withTiming(isOpened.value ? 1 : 0);
-    }, []);
+    const progress = useDerivedValue<number>(() => withTiming(isOpened.value ? 1 : 0), []);
 
     const { width: screenWidth, height: screenHeight } = useWindowDimensions();
     const translateX = useSharedValue(0);
@@ -51,9 +49,8 @@ export const FloatingModal: FC<FloatingModalProps> = memo(
 
     const maxDistance = Math.sqrt(screenWidth ** 2 + screenHeight ** 2);
     const scale = useDerivedValue(() => {
-      const distance = Math.sqrt(translateX.value ** 2 + translateY.value ** 2);
-      const normalizedDistance = distance / maxDistance;
-      return 1 - normalizedDistance;
+      const dist = Math.sqrt(translateX.value ** 2 + translateY.value ** 2);
+      return 1 - dist / maxDistance;
     }, [maxDistance]);
 
     const panGesture = Gesture.Pan()
@@ -62,86 +59,70 @@ export const FloatingModal: FC<FloatingModalProps> = memo(
         translateX.value = translationX;
         translateY.value = translationY;
       })
-      .onFinalize((event) => {
+      .onFinalize((e) => {
         if (!isOpened.value) return;
-
-        const isDraggingDown = event.translationY > 0;
-        const isDraggingDownEnoughToClose = isDraggingDown && scale.value < 0.95;
-
-        if (isDraggingDownEnoughToClose) {
-          isOpened.value = false;
-        }
-
+        if (e.translationY > 0 && scale.value < 0.95) isOpened.value = false;
         translateX.value = withSpring(0, { overshootClamping: true });
         translateY.value = withSpring(0, { overshootClamping: true });
       });
 
     const rOpenedModalStyle = useAnimatedStyle(() => {
-      const size = interpolate(
-        progress.value,
-        [0, 1],
-        [FLOATING_BUTTON_SIZE, screenWidth * 0.9],
-        Extrapolation.CLAMP,
-      );
-      const rightDistance = interpolate(
-        progress.value,
-        [0, 1],
-        [FLOATING_BUTTON_SIZE / 2, screenWidth * 0.05],
-        Extrapolation.CLAMP,
-      );
+      const size = interpolate(progress.value, [0, 1], [FLOATING_BUTTON_SIZE, screenWidth * 0.9], Extrapolation.CLAMP);
+      const right = interpolate(progress.value, [0, 1], [FLOATING_BUTTON_SIZE / 2, screenWidth * 0.05], Extrapolation.CLAMP);
       const centeredBottom = screenHeight / 2 - size / 2;
-      const keyboardAdjustedBottom = centeredBottom + keyboardOffset.value * 0.6;
-      const bottomDistance = interpolate(
+      const restingBottom = TAB_BAR_BOTTOM + TAB_BAR_HEIGHT + 12;
+      const bottom = interpolate(
         progress.value,
         [0, 1],
-        [FLOATING_BUTTON_SIZE / 2 + 50, keyboardAdjustedBottom],
+        [restingBottom, centeredBottom + keyboardOffset.value * 0.6],
         Extrapolation.CLAMP,
       );
-      const borderRadius = interpolate(progress.value, [0, 1], [32, 15], Extrapolation.CLAMP);
-
       return {
         width: size,
         height: size,
-        bottom: bottomDistance,
-        right: rightDistance,
-        borderRadius,
-        transform: [
-          { scale: scale.value },
-          { translateX: translateX.value },
-          { translateY: translateY.value },
-        ],
+        bottom,
+        right,
+        borderRadius: interpolate(progress.value, [0, 1], [32, 15], Extrapolation.CLAMP),
+        transform: [{ scale: scale.value }, { translateX: translateX.value }, { translateY: translateY.value }],
       };
     }, [screenWidth, screenHeight]);
 
-    const isModalVisible = useDerivedValue(() => {
-      return progress.value === 1;
-    }, []);
+    const isModalVisible = useDerivedValue(() => progress.value === 1, []);
+
+    const handleDone = async () => {
+      setDoneLoading(true);
+      try {
+        const result = await onDone?.();
+        if (result !== false) {
+          Keyboard.dismiss();
+          isOpened.value = false;
+        }
+      } finally {
+        setDoneLoading(false);
+      }
+    };
+
+    const bg = isDark ? '#111' : 'white';
 
     return (
       <>
-        <AnimatedBackdrop
-          isVisible={isModalVisible}
-          onBackdropPress={() => {
-            isOpened.value = !isOpened.value;
-          }}
-        />
+        <AnimatedBackdrop isVisible={isModalVisible} onBackdropPress={() => { isOpened.value = false; }} />
         <GestureDetector gesture={panGesture}>
-          <Animated.View style={[styles.floatingModal, rOpenedModalStyle]}>
+          <Animated.View style={[styles.floatingModal, { backgroundColor: bg }, rOpenedModalStyle]}>
             <ModalContent
               isVisible={isModalVisible}
+              isDark={isDark}
               title={title}
               doneLabel={doneLabel}
-              onDone={() => {
-                onDone?.();
-                isOpened.value = false;
-              }}>
+              loading={doneLoading}
+              onDone={handleDone}
+            >
               {children}
             </ModalContent>
             <AddCloseIcon
               progress={progress}
-              onPress={() => {
-                isOpened.value = !isOpened.value;
-              }}
+              isDark={isDark}
+              onPress={() => { isOpened.value = !isOpened.value; }}
             />
           </Animated.View>
         </GestureDetector>
@@ -154,8 +135,7 @@ FloatingModal.displayName = 'FloatingModal';
 
 const styles = StyleSheet.create({
   floatingModal: {
-    backgroundColor: 'white',
-    boxShadow: '0px 12px 12px rgba(0, 0, 0, 0.2)',
+    boxShadow: '0px 12px 12px rgba(0, 0, 0, 0.25)',
     position: 'absolute',
   },
 });

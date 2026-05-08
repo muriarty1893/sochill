@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { AppState, Pressable, StyleSheet, View } from 'react-native';
 import { useWindowDimensions } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useGetMode } from '@/hooks/use-mode';
 import Animated, {
   Easing,
@@ -12,6 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { SegmentedControl } from './segmented-control';
+import { TAB_BAR_BOTTOM, TAB_BAR_HEIGHT } from '../floating-modal/constants';
 
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import type { SegmentedItem } from './segmented-control';
@@ -19,7 +19,7 @@ import type { SegmentedItem } from './segmented-control';
 const TABS: readonly SegmentedItem[] = [
   { name: 'Home' },
   { name: 'Discover' },
-  { name: 'Notifications' },
+  { name: 'Spark' },
   { name: 'Messages' },
 ];
 
@@ -31,17 +31,14 @@ const ROUTE_TO_TAB: Record<string, SegmentedItem> = {
 };
 
 const HIDE_DELAY = 5000;
-// pill(56) + paddingTop(10) + paddingBottom(10) = 76, plus a bit of extra so it fully exits
-const BAR_CONTENT_HEIGHT = 76;
 
 export function SochillTabBar({ state, navigation }: BottomTabBarProps) {
   const { width } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
   const isDark = useGetMode();
   const controlWidth = width - 64;
   const selected = ROUTE_TO_TAB[state.routes[state.index]?.name] ?? TABS[0];
 
-  const totalSlide = BAR_CONTENT_HEIGHT + insets.bottom + 16;
+  const totalSlide = TAB_BAR_HEIGHT + TAB_BAR_BOTTOM + 16;
   const isVisible = useSharedValue(true);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -112,14 +109,11 @@ export function SochillTabBar({ state, navigation }: BottomTabBarProps) {
     }],
   }));
 
-  // Position the home indicator line inside the device safe area zone
-  const lineBottom = insets.bottom > 0 ? Math.round(insets.bottom * 0.38) : 8;
-
   return (
     <View style={styles.wrapper} pointerEvents="box-none">
       {/* Sliding nav bar */}
       <Animated.View
-        style={[styles.barContainer, { paddingBottom: insets.bottom + 10 }, barStyle]}
+        style={[styles.barContainer, barStyle]}
       >
         <SegmentedControl
           data={TABS}
@@ -130,9 +124,9 @@ export function SochillTabBar({ state, navigation }: BottomTabBarProps) {
         />
       </Animated.View>
 
-      {/* iPhone-style home indicator line — tap to reveal bar */}
+      {/* Home indicator line — tap to reveal bar */}
       <Animated.View
-        style={[styles.lineWrapper, { bottom: lineBottom }, lineStyle]}
+        style={[styles.lineWrapper, lineStyle]}
         pointerEvents="box-none"
       >
         <Pressable
@@ -156,14 +150,16 @@ const styles = StyleSheet.create({
   },
   barContainer: {
     alignItems: 'center',
-    bottom: 0,
+    bottom: TAB_BAR_BOTTOM,
     left: 0,
     paddingTop: 10,
+    paddingBottom: 10,
     position: 'absolute',
     right: 0,
   },
   lineWrapper: {
     alignItems: 'center',
+    bottom: 8,
     left: 0,
     position: 'absolute',
     right: 0,

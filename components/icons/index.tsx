@@ -235,13 +235,13 @@ export const CheckIcon = ({ size, color }: IconProps) => (
 
 export const SparkIcon = ({ size, color }: IconProps) => (
   <Svg width={size} height={size} fill="none" viewBox="0 0 24 24">
-    <Path fill={color} d="M14.5 2 6 13.5h6.5L11 22l9-12.5h-6.5L14.5 2Z" />
+    <Path fill={color} d="M12 2Q12 12 22 12Q12 12 12 22Q12 12 2 12Q12 12 12 2Z" />
   </Svg>
 );
 
 export const SparkIconUnfocused = ({ size, color }: IconProps) => (
   <Svg width={size} height={size} fill="none" viewBox="0 0 24 24">
-    <Path stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" d="M14.5 2 6 13.5h6.5L11 22l9-12.5h-6.5L14.5 2Z" />
+    <Path stroke={color} strokeWidth={1.5} strokeLinejoin="round" d="M12 2Q12 12 22 12Q12 12 12 22Q12 12 2 12Q12 12 12 2Z" />
   </Svg>
 );
 

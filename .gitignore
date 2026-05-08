@@ -9,7 +9,7 @@ dist/
 web-build/
 expo-env.d.ts
 
-# Native
+# Native build output
 .kotlin/
 *.orig.*
 *.jks
@@ -17,6 +17,9 @@ expo-env.d.ts
 *.p12
 *.key
 *.mobileprovision
+*.keystore
+google-services.json
+GoogleService-Info.plist
 
 # Metro
 .metro-health-check*
@@ -30,15 +33,34 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
-.env
-.env*.local
+# Linux
+*~
 
-# typescript
+# Windows
+Thumbs.db
+
+# Environment & secrets — NEVER commit these
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.staging
+*.secret
+secrets/
+
+# TypeScript
 *.tsbuildinfo
 
-app-example
+# EAS
+.easignore
 
-# generated native folders
+# generated native folders (managed workflow)
 /ios
 /android
+
+# editor
+.vscode/
+.idea/
+*.swp
+*.swo

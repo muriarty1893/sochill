@@ -22,6 +22,7 @@ import Button from '@/components/global/Button';
 import InputText from '@/components/auth/InputText';
 import InputPassword from '@/components/auth/InputPassword';
 import AnimatedScreen from '@/components/global/AnimatedScreen';
+import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 
 const { width } = Dimensions.get('window');
 
@@ -108,7 +109,7 @@ export default function RegisterScreen() {
                 register to gain access to a whole new world
               </Text>
 
-              <View style={{ marginTop: 70, width: '100%' }}>
+              <View style={{ marginTop: 70, alignSelf: 'stretch' }}>
                 {/* Email */}
                 <Animated.View style={{ transform: [{ translateX: animEmail.current }], marginBottom: 10 }}>
                   <ReAnimated.View entering={FadeIn.springify()} style={{ marginVertical: 5 }} exiting={FadeOut.springify()}>
@@ -207,6 +208,12 @@ export default function RegisterScreen() {
               <Button loading={loading} onPress={() => { Keyboard.dismiss(); handleSubmit(onSubmit)(); }}>
                 <Text style={{ fontFamily: 'jakaraBold', fontSize: 15, color: buttonColor }}>Register</Text>
               </Button>
+              <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', gap: 10, marginTop: 16 }}>
+                <View style={{ flex: 1, height: 1, backgroundColor: isDark ? '#333' : '#ddd' }} />
+                <Text style={{ color: isDark ? '#666' : '#aaa', fontFamily: 'jakara', fontSize: 13 }}>or</Text>
+                <View style={{ flex: 1, height: 1, backgroundColor: isDark ? '#333' : '#ddd' }} />
+              </View>
+              <GoogleSignInButton label="Sign up with Google" />
               <View style={{ flexDirection: 'row', width: '100%', height: 50, justifyContent: 'center', alignItems: 'center' }}>
                 <Pressable
                   style={{

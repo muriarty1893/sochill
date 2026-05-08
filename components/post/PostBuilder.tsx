@@ -1,4 +1,4 @@
-import { View, Pressable, Dimensions } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import Animated, { SlideOutRight } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useGetMode } from '@/hooks/use-mode';
@@ -10,7 +10,7 @@ import NameAndTag from './NameAndTag';
 import TextPost from './TextPost';
 import PhotoPost from './PhotoPost';
 import Engagements from './Engagements';
-import { ProfileIcon } from '../icons';
+import { ProfileIcon, RepostIcon } from '../icons';
 import { dateAgo } from '@/util/date';
 import type { Post } from '@/redux/slices/posts';
 
@@ -45,6 +45,14 @@ export default function PostBuilder({ post }: { post: Post }) {
 
   return (
     <Animated.View exiting={SlideOutRight.springify()} style={{ borderBottomWidth: 0.5, borderBottomColor }}>
+      {post.reposted_by && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 20, paddingTop: 8, paddingBottom: 2 }}>
+          <RepostIcon size={13} color={isDark ? '#555' : '#999'} />
+          <Text style={{ color: isDark ? '#555' : '#999', fontFamily: 'jakara', fontSize: 12 }}>
+            {post.reposted_by.display_name ?? post.reposted_by.username} reposted
+          </Text>
+        </View>
+      )}
       <Pressable
         onPress={() => router.push({ pathname: '/(app)/post/[id]', params: { id: post.id } })}
         android_ripple={{ color: rColor, foreground: true }}

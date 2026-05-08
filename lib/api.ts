@@ -59,16 +59,21 @@ export async function uploadAvatar(uri: string): Promise<string> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const response = await fetch(uri);
-  const blob = await response.blob();
-  const ext = uri.split('.').pop() ?? 'jpg';
+  const cleanUri = uri.split('?')[0];
+  const rawExt = cleanUri.split('.').pop()?.toLowerCase() ?? 'jpg';
+  const ext = rawExt === 'jpeg' ? 'jpg' : rawExt;
+  const contentType = ext === 'jpg' ? 'image/jpeg' : `image/${ext}`;
   const path = `avatars/${user.id}.${ext}`;
 
-  const { error } = await supabase.storage.from('media').upload(path, blob, { upsert: true });
+  const response = await fetch(uri);
+  const arrayBuffer = await response.arrayBuffer();
+  const { error } = await supabase.storage
+    .from('media')
+    .upload(path, arrayBuffer, { contentType, upsert: true });
   if (error) throw error;
 
   const { data } = supabase.storage.from('media').getPublicUrl(path);
-  return data.publicUrl;
+  return `${data.publicUrl}?t=${Date.now()}`;
 }
 
 // ─── Posts ────────────────────────────────────────────────────────────────
@@ -163,6 +168,58 @@ export async function getUserPosts(userId: string) {
   }));
 }
 
+export async function getUserPostsAndReposts(userId: string) {
+  const { data: { user: authUser } } = await supabase.auth.getUser();
+
+  const SELECT = `
+    *,
+    profiles (id, username, handle, display_name, avatar_url, verified),
+    post_likes (user_id),
+    reposts (user_id),
+    comments (id)
+  `;
+
+  const [
+    { data: originalPosts, error: postsError },
+    { data: repostRecords },
+    { data: reposterProfile },
+  ] = await Promise.all([
+    supabase.from('posts').select(SELECT).eq('user_id', userId).order('created_at', { ascending: false }),
+    supabase.from('reposts').select('post_id, created_at').eq('user_id', userId),
+    supabase.from('profiles').select('id, username, display_name, avatar_url').eq('id', userId).single(),
+  ]);
+
+  if (postsError) throw postsError;
+
+  const mapPost = (p: any, extra?: object) => ({
+    ...p,
+    likes_count: p.post_likes?.length ?? 0,
+    comments_count: p.comments?.length ?? 0,
+    reposts_count: p.reposts?.length ?? 0,
+    is_liked: authUser ? p.post_likes?.some((l: any) => l.user_id === authUser.id) : false,
+    is_reposted: authUser ? p.reposts?.some((r: any) => r.user_id === authUser.id) : false,
+    ...extra,
+  });
+
+  const originals = (originalPosts ?? []).map((p: any) => mapPost(p));
+
+  const repostIds = repostRecords?.map((r: any) => r.post_id) ?? [];
+  let reposts: any[] = [];
+  if (repostIds.length > 0) {
+    const { data: rPosts } = await supabase.from('posts').select(SELECT).in('id', repostIds);
+    reposts = (rPosts ?? []).map((p: any) => {
+      const rec = repostRecords!.find((r: any) => r.post_id === p.id);
+      return mapPost(p, { reposted_by: reposterProfile, reposted_at: rec?.created_at });
+    });
+  }
+
+  return [...originals, ...reposts].sort((a, b) => {
+    const da = new Date(a.reposted_at ?? a.created_at).getTime();
+    const db = new Date(b.reposted_at ?? b.created_at).getTime();
+    return db - da;
+  });
+}
+
 export async function createPost(body: string, imageData?: { uri: string; width: number; height: number }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
@@ -240,28 +297,133 @@ export async function repost(postId: string) {
   }
 }
 
+export async function getPostById(postId: string) {
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const { data, error } = await supabase
+    .from('posts')
+    .select(`
+      *,
+      profiles (id, username, handle, display_name, avatar_url, verified),
+      post_likes (user_id),
+      reposts (user_id),
+      comments (id)
+    `)
+    .eq('id', postId)
+    .single();
+
+  if (error) throw error;
+
+  return {
+    ...data,
+    likes_count: data.post_likes?.length ?? 0,
+    comments_count: data.comments?.length ?? 0,
+    reposts_count: data.reposts?.length ?? 0,
+    is_liked: user ? data.post_likes?.some((l: any) => l.user_id === user.id) : false,
+    is_reposted: user ? data.reposts?.some((r: any) => r.user_id === user.id) : false,
+  };
+}
+
+export async function incrementPostView(postId: string) {
+  await supabase.rpc('increment_post_views', { post_id: postId });
+}
+
 // ─── Comments ─────────────────────────────────────────────────────────────
 
 export async function getComments(postId: string) {
+  const { data: { user } } = await supabase.auth.getUser();
   const { data, error } = await supabase
     .from('comments')
-    .select('*, profiles (id, username, handle, display_name, avatar_url)')
+    .select('*, profiles (id, username, handle, display_name, avatar_url), comment_likes (user_id)')
     .eq('post_id', postId)
     .order('created_at', { ascending: true });
   if (error) throw error;
-  return data;
+  return data.map((c: any) => ({
+    ...c,
+    likes_count: c.comment_likes?.length ?? 0,
+    is_liked: user ? c.comment_likes?.some((l: any) => l.user_id === user.id) : false,
+  }));
 }
 
-export async function addComment(postId: string, body: string) {
+export async function addComment(postId: string, body: string, parentId?: string, imageUri?: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
+
+  let image_url: string | undefined;
+  if (imageUri) {
+    const cleanUri = imageUri.split('?')[0];
+    const rawExt = cleanUri.split('.').pop()?.toLowerCase() ?? 'jpg';
+    const ext = rawExt === 'jpeg' ? 'jpg' : rawExt;
+    const contentType = ext === 'jpg' ? 'image/jpeg' : `image/${ext}`;
+    const path = `comments/${user.id}/${Date.now()}.${ext}`;
+    const response = await fetch(imageUri);
+    const arrayBuffer = await response.arrayBuffer();
+    const { error: uploadError } = await supabase.storage
+      .from('media')
+      .upload(path, arrayBuffer, { contentType, upsert: false });
+    if (uploadError) throw uploadError;
+    const { data: urlData } = supabase.storage.from('media').getPublicUrl(path);
+    image_url = urlData.publicUrl;
+  }
+
   const { data, error } = await supabase
     .from('comments')
-    .insert({ post_id: postId, user_id: user.id, body })
+    .insert({ post_id: postId, user_id: user.id, body, image_url, ...(parentId ? { parent_id: parentId } : {}) })
     .select('*, profiles (id, username, handle, display_name, avatar_url)')
     .single();
   if (error) throw error;
-  return data;
+  return { ...data, likes_count: 0, is_liked: false };
+}
+
+export async function deleteComment(commentId: string) {
+  const { error } = await supabase.from('comments').delete().eq('id', commentId);
+  if (error) throw error;
+}
+
+export async function getCommentById(commentId: string) {
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data, error } = await supabase
+    .from('comments')
+    .select('*, profiles (id, username, handle, display_name, avatar_url), comment_likes (user_id)')
+    .eq('id', commentId)
+    .single();
+  if (error) throw error;
+  return {
+    ...data,
+    likes_count: data.comment_likes?.length ?? 0,
+    is_liked: user ? data.comment_likes?.some((l: any) => l.user_id === user.id) : false,
+  };
+}
+
+export async function getCommentReplies(commentId: string) {
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data, error } = await supabase
+    .from('comments')
+    .select('*, profiles (id, username, handle, display_name, avatar_url), comment_likes (user_id)')
+    .eq('parent_id', commentId)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map((c: any) => ({
+    ...c,
+    likes_count: c.comment_likes?.length ?? 0,
+    is_liked: user ? c.comment_likes?.some((l: any) => l.user_id === user.id) : false,
+  }));
+}
+
+export async function likeComment(commentId: string) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+  const { data: existing } = await supabase
+    .from('comment_likes')
+    .select('id')
+    .eq('comment_id', commentId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (existing) {
+    await supabase.from('comment_likes').delete().eq('id', existing.id);
+  } else {
+    await supabase.from('comment_likes').insert({ comment_id: commentId, user_id: user.id });
+  }
 }
 
 // ─── Users & Follow ───────────────────────────────────────────────────────

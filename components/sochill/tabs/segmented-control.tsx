@@ -13,7 +13,7 @@ const ICON_SIZE = 22;
 const ICON_SOURCES: Record<string, ImageSourcePropType> = {
   Home: require('@/icons/home.png'),
   Discover: require('@/icons/discover.png'),
-  Notifications: require('@/icons/activity.png'),
+  Spark: require('@/icons/activity.png'),
   Messages: require('@/icons/profile.png'),
 };
 

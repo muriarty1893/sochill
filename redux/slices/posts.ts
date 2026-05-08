@@ -21,6 +21,8 @@ export interface Post {
   reposts_count?: number;
   is_liked?: boolean;
   is_reposted?: boolean;
+  reposted_by?: { id: string; username: string; display_name?: string; avatar_url?: string } | null;
+  reposted_at?: string;
 }
 
 interface PostsState {
@@ -58,6 +60,21 @@ export const postsSlice = createSlice({
         post.likes_count = (post.likes_count ?? 0) + (post.is_liked ? 1 : -1);
       }
     },
+    upsertPost(state, action: PayloadAction<Post>) {
+      const idx = state.data.findIndex((p) => p.id === action.payload.id);
+      if (idx >= 0) {
+        // keep optimistic like/repost state, update everything else
+        state.data[idx] = {
+          ...action.payload,
+          likes_count: state.data[idx].likes_count,
+          is_liked: state.data[idx].is_liked,
+          reposts_count: state.data[idx].reposts_count,
+          is_reposted: state.data[idx].is_reposted,
+        };
+      } else {
+        state.data.push(action.payload);
+      }
+    },
     setLoading(state, action: PayloadAction<boolean>) {
       state.loading = action.payload;
     },
@@ -68,5 +85,5 @@ export const postsSlice = createSlice({
   },
 });
 
-export const { setPosts, addPosts, prependPost, removePost, toggleLike, setLoading, resetPosts } = postsSlice.actions;
+export const { setPosts, addPosts, prependPost, removePost, toggleLike, upsertPost, setLoading, resetPosts } = postsSlice.actions;
 export default postsSlice.reducer;

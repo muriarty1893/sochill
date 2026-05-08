@@ -7,7 +7,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { useGetMode } from '@/hooks/use-mode';
-import { HeartUnfocused, HeartsFocused } from '../icons';
+import { SparkIconUnfocused, SparkIcon } from '../icons';
 
 export default function LikeButton({
   isLiked,
@@ -40,10 +40,10 @@ export default function LikeButton({
       >
         <View style={{ width: 18 }}>
           <Animated.View style={[StyleSheet.absoluteFillObject, outlineStyle]}>
-            <HeartUnfocused size={18} color="red" />
+            <SparkIconUnfocused size={18} color="#F4AC0C" />
           </Animated.View>
           <Animated.View style={fillStyle}>
-            <HeartsFocused size={18} color="red" />
+            <SparkIcon size={18} color="#F4AC0C" />
           </Animated.View>
         </View>
         <Text style={{ color, fontFamily: 'jakara', includeFontPadding: false }}>{text}</Text>

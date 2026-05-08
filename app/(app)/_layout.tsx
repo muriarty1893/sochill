@@ -55,6 +55,8 @@ export default function AppLayout() {
       <Drawer.Screen name="following" options={{ drawerItemStyle: { display: 'none' }, headerShown: false }} />
       <Drawer.Screen name="new-conversation" options={{ drawerItemStyle: { display: 'none' }, headerShown: false }} />
       <Drawer.Screen name="spark" options={{ drawerItemStyle: { display: 'none' }, headerShown: false }} />
+      <Drawer.Screen name="image-viewer" options={{ drawerItemStyle: { display: 'none' }, headerShown: false }} />
+      <Drawer.Screen name="comment/[id]" options={{ drawerItemStyle: { display: 'none' }, headerShown: false }} />
     </Drawer>
   );
 }

@@ -17,7 +17,10 @@ export default function PhotoPost({
     <View style={{ width: '100%', height: 200, marginTop: 10, marginBottom: 10, borderRadius: 15, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
       <Pressable
         android_ripple={{ color: '#000000', foreground: true }}
-        onPress={() => router.push({ pathname: '/(app)/post/[id]', params: { id: postId } })}
+        onPress={(e) => {
+          e.stopPropagation();
+          router.push({ pathname: '/(app)/image-viewer', params: { uri: imageUrl } });
+        }}
         style={{ width: '100%', height: 200, borderRadius: 15 }}
       >
         <Image

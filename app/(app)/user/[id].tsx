@@ -12,7 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useGetMode } from '@/hooks/use-mode';
 import { useAppSelector } from '@/redux/hooks';
-import { getProfile, getFollowDetails, getUserPosts, follow, unfollow, isFollowing, getOrCreateConversation } from '@/lib/api';
+import { getProfile, getFollowDetails, getUserPostsAndReposts, follow, unfollow, isFollowing, getOrCreateConversation } from '@/lib/api';
 import AnimatedScreen from '@/components/global/AnimatedScreen';
 import PostBuilder from '@/components/post/PostBuilder';
 import { BackIcon, ProfileIcon } from '@/components/icons';
@@ -40,7 +40,7 @@ export default function PeopleProfileScreen() {
     const [p, fd, up, fol] = await Promise.all([
       getProfile(id),
       getFollowDetails(id),
-      getUserPosts(id),
+      getUserPostsAndReposts(id),
       isFollowing(id),
     ]).catch(() => [null, null, [], false]);
     setProfile(p);

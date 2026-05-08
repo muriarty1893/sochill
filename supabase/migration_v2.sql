@@ -185,6 +185,10 @@ create policy "Authenticated users can upload media"
   on storage.objects for insert to authenticated
   with check (bucket_id = 'media');
 
+create policy "Owners can update media"
+  on storage.objects for update to authenticated
+  using (bucket_id = 'media');
+
 create policy "Owners can delete media"
   on storage.objects for delete to authenticated
   using (bucket_id = 'media');
@@ -220,3 +224,32 @@ begin
   return new;
 end;
 $$;
+
+-- ─── View counts ──────────────────────────────────────────────────────────
+ALTER TABLE public.posts ADD COLUMN IF NOT EXISTS views_count bigint NOT NULL DEFAULT 0;
+
+CREATE OR REPLACE FUNCTION public.increment_post_views(post_id uuid)
+RETURNS void LANGUAGE sql SECURITY DEFINER AS $$
+  UPDATE public.posts SET views_count = views_count + 1 WHERE id = post_id;
+$$;
+
+-- ─── Nested replies ───────────────────────────────────────────────────────
+ALTER TABLE public.comments ADD COLUMN IF NOT EXISTS parent_id uuid REFERENCES public.comments(id) ON DELETE CASCADE;
+
+-- ─── Image replies & likeable comments ───────────────────────────────────
+ALTER TABLE public.comments ADD COLUMN IF NOT EXISTS image_url text;
+
+CREATE TABLE IF NOT EXISTS public.comment_likes (
+  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  comment_id uuid NOT NULL REFERENCES public.comments(id) ON DELETE CASCADE,
+  user_id    uuid NOT NULL REFERENCES auth.users(id)      ON DELETE CASCADE,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(comment_id, user_id)
+);
+ALTER TABLE public.comment_likes ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Comment likes readable"   ON public.comment_likes;
+DROP POLICY IF EXISTS "Users can like comments"  ON public.comment_likes;
+DROP POLICY IF EXISTS "Users can unlike comments" ON public.comment_likes;
+CREATE POLICY "Comment likes readable"    ON public.comment_likes FOR SELECT USING (true);
+CREATE POLICY "Users can like comments"   ON public.comment_likes FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can unlike comments" ON public.comment_likes FOR DELETE USING (auth.uid() = user_id);

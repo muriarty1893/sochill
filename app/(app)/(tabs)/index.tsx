@@ -1,5 +1,6 @@
 import { View, Text, Pressable, RefreshControl, Dimensions } from 'react-native';
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInRight, FadeOutRight } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -12,36 +13,13 @@ import { setPosts, addPosts, setLoading } from '@/redux/slices/posts';
 import { openToast } from '@/redux/slices/toast';
 import AnimatedScreen from '@/components/global/AnimatedScreen';
 import PostBuilder from '@/components/post/PostBuilder';
-import { AddIcon } from '@/components/icons';
+import { PostComposer } from '@/components/post/PostComposer';
 import type { Post } from '@/redux/slices/posts';
 
 const { width, height } = Dimensions.get('window');
 
-function Fab() {
-  const isDark = useGetMode();
-  const router = useRouter();
-  const color = isDark ? 'white' : 'black';
-  const bg = isDark ? 'white' : 'black';
-  const iconColor = isDark ? 'black' : 'white';
-
-  return (
-    <View style={{ position: 'absolute', bottom: 80, right: 20, borderRadius: 999, overflow: 'hidden' }}>
-      <Pressable
-        android_ripple={{ color: isDark ? '#555' : '#aaa', foreground: true }}
-        onPress={() => router.push('/(app)/post-content')}
-        style={{
-          width: 56, height: 56, borderRadius: 28, backgroundColor: bg,
-          justifyContent: 'center', alignItems: 'center',
-          shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8, elevation: 6,
-        }}
-      >
-        <AddIcon size={28} color={iconColor} />
-      </Pressable>
-    </View>
-  );
-}
-
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
   const isDark = useGetMode();
   const dispatch = useAppDispatch();
   const navigation = useNavigation<any>();
@@ -126,7 +104,7 @@ export default function HomeScreen() {
             keyExtractor={keyExtractor}
             renderItem={renderItem}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[color]} />}
-            contentContainerStyle={{ paddingTop: 100, paddingBottom: 100 }}
+            contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 100 }}
             onEndReachedThreshold={0.3}
             onEndReached={() => { if (!noMore && !loading) fetchPosts(); }}
             ListFooterComponent={
@@ -149,7 +127,7 @@ export default function HomeScreen() {
             }
           />
         )}
-        <Fab />
+        <PostComposer />
       </View>
     </AnimatedScreen>
   );
