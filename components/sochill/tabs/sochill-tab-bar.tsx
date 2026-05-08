@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { AppState, Pressable, StyleSheet, View } from 'react-native';
 import { useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useGetMode } from '@/hooks/use-mode';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -18,15 +19,15 @@ import type { SegmentedItem } from './segmented-control';
 const TABS: readonly SegmentedItem[] = [
   { name: 'Home' },
   { name: 'Discover' },
-  { name: 'Activity' },
-  { name: 'Profile' },
+  { name: 'Notifications' },
+  { name: 'Messages' },
 ];
 
 const ROUTE_TO_TAB: Record<string, SegmentedItem> = {
   index: TABS[0],
   discover: TABS[1],
-  activity: TABS[2],
-  profile: TABS[3],
+  notifications: TABS[2],
+  messages: TABS[3],
 };
 
 const HIDE_DELAY = 5000;
@@ -36,6 +37,7 @@ const BAR_CONTENT_HEIGHT = 76;
 export function SochillTabBar({ state, navigation }: BottomTabBarProps) {
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const isDark = useGetMode();
   const controlWidth = width - 64;
   const selected = ROUTE_TO_TAB[state.routes[state.index]?.name] ?? TABS[0];
 
@@ -137,7 +139,7 @@ export function SochillTabBar({ state, navigation }: BottomTabBarProps) {
           onPress={showBar}
           hitSlop={{ top: 18, bottom: 18, left: 80, right: 80 }}
         >
-          <View style={styles.line} />
+          <View style={[styles.line, { backgroundColor: isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.32)' }]} />
         </Pressable>
       </Animated.View>
     </View>
@@ -167,7 +169,6 @@ const styles = StyleSheet.create({
     right: 0,
   },
   line: {
-    backgroundColor: 'rgba(0, 0, 0, 0.32)',
     borderRadius: 3,
     height: 5,
     width: 134,

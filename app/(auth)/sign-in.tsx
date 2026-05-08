@@ -1,158 +1,164 @@
-import { useState } from 'react';
 import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
   View,
+  Text,
+  ScrollView,
+  Animated,
+  Dimensions,
+  TouchableWithoutFeedback,
+  Keyboard,
+  Vibration,
+  Pressable,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
+import { useForm, Controller } from 'react-hook-form';
+import ReAnimated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-reanimated';
+import { Image } from 'expo-image';
 import { supabase } from '@/lib/supabase';
+import { useGetMode } from '@/hooks/use-mode';
+import { useAppDispatch } from '@/redux/hooks';
+import { openToast } from '@/redux/slices/toast';
+import { setUser } from '@/redux/slices/user';
+import Button from '@/components/global/Button';
+import InputText from '@/components/auth/InputText';
+import InputPassword from '@/components/auth/InputPassword';
+import AnimatedScreen from '@/components/global/AnimatedScreen';
+
+const { width } = Dimensions.get('window');
 
 export default function SignInScreen() {
+  const isDark = useGetMode();
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const dispatch = useAppDispatch();
+  const color = isDark ? 'white' : 'black';
+  const buttonColor = !isDark ? 'white' : 'black';
+  const borderColor = isDark ? 'white' : 'black';
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
-  const handleSendCode = async () => {
-    const trimmed = email.trim().toLowerCase();
-    if (!trimmed || !trimmed.includes('@')) {
-      setError('Enter a valid email address.');
-      return;
-    }
-    setError('');
-    setLoading(true);
-    const { error: authError } = await supabase.auth.signInWithOtp({
-      email: trimmed,
-      options: { shouldCreateUser: true },
-    });
-    setLoading(false);
-    if (authError) {
-      setError(authError.message);
-      return;
-    }
-    router.push({ pathname: '/(auth)/verify', params: { email: trimmed } });
+  const { control, handleSubmit, formState: { errors } } = useForm({
+    defaultValues: { email: '', password: '' },
+  });
+
+  const animEmail = useRef(new Animated.Value(0));
+  const animPass = useRef(new Animated.Value(0));
+  const scrollViewRef = useRef<ScrollView | null>(null);
+
+  const vibrateAnimation = (anim: React.MutableRefObject<Animated.Value>) => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim.current, { useNativeDriver: true, toValue: -2, duration: 50 }),
+        Animated.timing(anim.current, { useNativeDriver: true, toValue: 2, duration: 50 }),
+        Animated.timing(anim.current, { useNativeDriver: true, toValue: 0, duration: 50 }),
+      ]),
+      { iterations: 2 }
+    ).start();
   };
 
+  useEffect(() => {
+    if (errors.email) vibrateAnimation(animEmail);
+    if (errors.password) vibrateAnimation(animPass);
+  }, [errors.email, errors.password]);
+
+  const onSubmit = async ({ email, password }: { email: string; password: string }) => {
+    setLoading(true);
+    Keyboard.dismiss();
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+      if (error) throw error;
+      if (data.user) {
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
+        if (profile) {
+          dispatch(setUser({ id: profile.id, email: data.user.email, username: profile.username, handle: profile.handle, display_name: profile.display_name, bio: profile.bio, avatar_url: profile.avatar_url, verified: profile.verified }));
+        }
+        Vibration.vibrate(5);
+        dispatch(openToast({ text: 'Successful Login', type: 'Success' }));
+      }
+    } catch (e: any) {
+      Vibration.vibrate(5);
+      dispatch(openToast({ text: e.message ?? 'Login failed', type: 'Failed' }));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const keyboard = useAnimatedKeyboard({ isStatusBarTranslucentAndroid: true });
+  const animatedStyles = useAnimatedStyle(() => ({
+    transform: [{ translateY: -keyboard.height.value }],
+    paddingTop: keyboard.height.value,
+  }));
+
   return (
-    <SafeAreaView style={styles.screen}>
-      <KeyboardAvoidingView
-        style={styles.inner}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <AnimatedScreen>
+      <TouchableWithoutFeedback style={{ flex: 1 }} onPress={Keyboard.dismiss}>
+        <ReAnimated.View style={[{ flex: 1, marginTop: 40 }, animatedStyles]}>
+          <ScrollView
+            ref={scrollViewRef}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ alignItems: 'center', paddingHorizontal: 25, paddingBottom: 50 }}
+          >
+            <View style={{ alignItems: 'center' }}>
+              <Image
+                source={require('../../assets/images/splash-icon.png')}
+                contentFit="contain"
+                style={{ height: 200, width }}
+              />
+              <Text style={{ color, fontFamily: 'mulishBold', fontSize: 24 }}>Welcome Back</Text>
+              <Text style={{ color, fontFamily: 'mulish', fontSize: 14 }}>
+                sign in to access your account
+              </Text>
 
-        <View style={styles.header}>
-          <Text style={styles.logo}>✦ sparkle</Text>
-          <Text style={styles.subtitle}>support what matters, together.</Text>
-        </View>
+              <View style={{ gap: 30, marginTop: 70 }}>
+                <Animated.View style={{ transform: [{ translateX: animEmail.current }] }}>
+                  <Controller
+                    control={control}
+                    rules={{ required: true }}
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <InputText
+                        style={{ borderColor: errors.email ? 'red' : '', borderWidth: errors.email ? 1 : 0 }}
+                        props={{ value, onBlur, onChangeText: onChange, placeholder: 'Email address', keyboardType: 'email-address' }}
+                      />
+                    )}
+                    name="email"
+                  />
+                </Animated.View>
 
-        <View style={styles.form}>
-          <Text style={styles.label}>Your email</Text>
-          <TextInput
-            style={styles.input}
-            value={email}
-            onChangeText={(t) => { setEmail(t); setError(''); }}
-            placeholder="you@example.com"
-            placeholderTextColor="#A0A59F"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoComplete="email"
-            autoFocus
-            returnKeyType="done"
-            onSubmitEditing={handleSendCode}
-          />
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-          <Pressable
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleSendCode}
-            disabled={loading}>
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.buttonText}>Send code</Text>
-            )}
-          </Pressable>
-          <Text style={styles.hint}>We'll send a 6-digit code to your email. No password needed.</Text>
-        </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+                <Animated.View style={{ transform: [{ translateX: animPass.current }] }}>
+                  <Controller
+                    control={control}
+                    rules={{ required: true, minLength: 6 }}
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <InputPassword
+                        style={{ borderColor: errors.password ? 'red' : '', borderWidth: errors.password ? 1 : 0 }}
+                        props={{ value, onChangeText: onChange, onBlur }}
+                      />
+                    )}
+                    name="password"
+                  />
+                </Animated.View>
+              </View>
+            </View>
+          </ScrollView>
+
+          <View style={{ width: '100%', justifyContent: 'center', alignItems: 'center', paddingBottom: 40, paddingHorizontal: 25 }}>
+            <Button loading={loading} onPress={() => { Keyboard.dismiss(); handleSubmit(onSubmit)(); }}>
+              <Text style={{ fontFamily: 'jakaraBold', fontSize: 15, color: buttonColor }}>Login</Text>
+            </Button>
+            <View style={{ flexDirection: 'row', width: '100%', height: 50, justifyContent: 'center', alignItems: 'center' }}>
+              <Pressable
+                style={{
+                  width: '100%', marginTop: 20, height: '100%', flexDirection: 'row', gap: 4,
+                  borderStyle: 'dashed', justifyContent: 'center', borderWidth: 1, borderColor,
+                  borderRadius: 10, alignItems: 'center',
+                }}
+                onPress={() => router.push('/(auth)/register')}
+              >
+                <Text style={{ color, includeFontPadding: false }}>Don't have an account?</Text>
+                <Text style={{ color, fontFamily: 'jakaraBold', includeFontPadding: false }}>Register</Text>
+              </Pressable>
+            </View>
+          </View>
+        </ReAnimated.View>
+      </TouchableWithoutFeedback>
+    </AnimatedScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: {
-    backgroundColor: '#FFFCF6',
-    flex: 1,
-  },
-  inner: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 28,
-  },
-  header: {
-    marginBottom: 48,
-  },
-  logo: {
-    color: '#171A18',
-    fontFamily: 'SofiaSansCondensed_800ExtraBold',
-    fontSize: 40,
-  },
-  subtitle: {
-    color: '#7C827D',
-    fontFamily: 'RobotoSlab_400Regular',
-    fontSize: 14,
-    marginTop: 6,
-  },
-  form: {
-    gap: 10,
-  },
-  label: {
-    color: '#303531',
-    fontFamily: 'SofiaSansCondensed_800ExtraBold',
-    fontSize: 18,
-    marginBottom: 2,
-  },
-  input: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#ECE4D9',
-    borderRadius: 10,
-    borderWidth: 1,
-    color: '#171A18',
-    fontFamily: 'RobotoSlab_400Regular',
-    fontSize: 16,
-    padding: 15,
-  },
-  error: {
-    color: '#C86B4A',
-    fontFamily: 'RobotoSlab_400Regular',
-    fontSize: 13,
-    marginTop: 2,
-  },
-  button: {
-    alignItems: 'center',
-    backgroundColor: '#2E8B77',
-    borderRadius: 12,
-    marginTop: 6,
-    padding: 16,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontFamily: 'SofiaSansCondensed_800ExtraBold',
-    fontSize: 20,
-  },
-  hint: {
-    color: '#A0A59F',
-    fontFamily: 'RobotoSlab_400Regular',
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: 4,
-    textAlign: 'center',
-  },
-});

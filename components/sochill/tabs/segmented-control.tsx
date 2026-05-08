@@ -13,8 +13,8 @@ const ICON_SIZE = 22;
 const ICON_SOURCES: Record<string, ImageSourcePropType> = {
   Home: require('@/icons/home.png'),
   Discover: require('@/icons/discover.png'),
-  Activity: require('@/icons/activity.png'),
-  Profile: require('@/icons/profile.png'),
+  Notifications: require('@/icons/activity.png'),
+  Messages: require('@/icons/profile.png'),
 };
 
 export type SegmentedItem = {
